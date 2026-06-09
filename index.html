@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EnergyTrack</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d12;--phone:#111118;--s1:#1c1c26;--s2:#242430;--s3:#2c2c3a;
+  --b1:rgba(255,255,255,0.07);--b2:rgba(255,255,255,0.13);
+  --t:#eeeef5;--tm:#6a6a80;--td:#9999b0;
+  --elec:#f5c842;--elec-d:rgba(245,200,66,0.15);
+  --gas:#ff6b35;--gas-d:rgba(255,107,53,0.15);
+  --water:#3bc9db;--water-d:rgba(59,201,219,0.15);
+  --green:#51cf66;--red:#ff6b6b;--orange:#fd7e14;
+  --acc:#7c5cfc;--acc-d:rgba(124,92,252,0.2);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t);min-height:100vh;
+  display:flex;align-items:flex-start;justify-content:center;padding:40px 20px 60px;
+  background-image:radial-gradient(ellipse at 20% 20%,rgba(124,92,252,0.06),transparent 60%),
+    radial-gradient(ellipse at 80% 80%,rgba(59,201,219,0.04),transparent 60%)}
+
+.page{display:flex;align-items:flex-start;gap:40px;max-width:960px;width:100%}
+
+/* INFO PANEL */
+.info-panel{flex:1;padding-top:50px;display:flex;flex-direction:column;gap:20px;min-width:200px}
+.app-logo .lbl{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--tm)}
+.app-logo h1{font-size:30px;font-weight:700;line-height:1.1;background:linear-gradient(135deg,var(--elec),var(--acc),var(--water));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.phase{display:inline-flex;align-items:center;gap:6px;background:var(--acc-d);border:1px solid rgba(124,92,252,.3);color:#a08cfc;font-size:11px;font-weight:600;padding:5px 11px;border-radius:20px;width:fit-content}
+.icard{background:var(--s1);border-radius:14px;padding:14px;border:1px solid var(--b1)}
+.icard-t{font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--tm);margin-bottom:8px}
+.icard p{font-size:11px;color:var(--td);line-height:1.7}
+
+/* PHONE */
+.phone-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:14px}
+.phone{width:320px;height:660px;background:var(--phone);border-radius:44px;border:2px solid rgba(255,255,255,.1);
+  box-shadow:0 0 0 8px #0a0a0f,0 0 0 10px rgba(255,255,255,.04),0 50px 100px rgba(0,0,0,.7);
+  overflow:hidden;position:relative}
+.phone::before{content:'';position:absolute;top:10px;left:50%;transform:translateX(-50%);width:90px;height:24px;
+  background:var(--phone);border-radius:0 0 16px 16px;z-index:100;border:1.5px solid rgba(255,255,255,.07);border-top:none}
+.phone-inner{width:100%;height:100%;border-radius:42px;overflow:hidden;display:flex;flex-direction:column;background:var(--phone)}
+.sbar{padding:14px 22px 0;display:flex;justify-content:space-between;align-items:center;
+  font-family:'Space Mono',monospace;font-size:10px;color:var(--tm);flex-shrink:0;z-index:10}
+
+/* SCREENS */
+.sc-wrap{flex:1;overflow:hidden;position:relative}
+.sc{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:10px 15px 6px;
+  display:none;flex-direction:column;gap:9px;scrollbar-width:none}
+.sc::-webkit-scrollbar{display:none}
+.sc.on{display:flex}
+.sc-title{font-size:21px;font-weight:700;letter-spacing:-.5px;flex-shrink:0}
+.sc-sub{font-size:11px;color:var(--tm);margin-top:1px;flex-shrink:0}
+
+/* BOTTOM NAV */
+.bnav{display:flex;background:var(--s1);border-top:1px solid var(--b1);padding:7px 0 16px;flex-shrink:0;z-index:10}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:7.5px;color:var(--tm);
+  cursor:pointer;transition:color .15s;padding:3px 0;-webkit-tap-highlight-color:transparent;user-select:none}
+.ni.on{color:var(--acc)}
+.ni:active{opacity:.7}
+.nicon{font-size:17px;line-height:1}
+
+/* CARDS */
+.egrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex-shrink:0}
+.ecard{background:var(--s1);border-radius:15px;padding:11px 9px;border:1px solid var(--b1);position:relative;overflow:hidden;cursor:pointer;transition:transform .15s}
+.ecard:active{transform:scale(.97)}
+.ecard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:15px 15px 0 0}
+.ecard.elec::before{background:var(--elec)}.ecard.gas::before{background:var(--gas)}.ecard.water::before{background:var(--water)}
+.cicon{font-size:15px;margin-bottom:3px}
+.cname{font-size:8px;text-transform:uppercase;letter-spacing:.8px;color:var(--tm);font-weight:600}
+.cval{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;margin-top:2px;line-height:1}
+.cunit{font-size:8px;color:var(--tm);margin-top:1px}
+.cchg{font-size:8px;margin-top:4px}.cchg.up{color:var(--red)}.cchg.down{color:var(--green)}.cchg.n{color:var(--tm)}
+.mchart{display:flex;align-items:flex-end;gap:2px;height:16px;margin-top:5px}
+.mbar{flex:1;border-radius:2px;opacity:.7}
+
+/* GENERIC CARDS */
+.card{background:var(--s1);border-radius:15px;padding:13px;border:1px solid var(--b1);flex-shrink:0}
+.card-t{font-size:12px;font-weight:600;margin-bottom:10px}
+.tcard{background:linear-gradient(135deg,rgba(124,92,252,.15),rgba(59,201,219,.08));border-radius:15px;
+  padding:13px;border:1px solid rgba(124,92,252,.2);flex-shrink:0}
+.tlbl{font-size:10px;color:var(--tm);text-transform:uppercase;letter-spacing:1px}
+.tval{font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:var(--acc);margin-top:2px}
+.tsub{font-size:10px;color:var(--tm);margin-top:2px}
+
+/* SECTION */
+.sh{display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.st{font-size:12px;font-weight:600}
+.sbtn{font-size:10px;color:var(--acc);cursor:pointer;background:none;border:none;font-family:inherit;padding:0}
+
+/* READINGS */
+.ri{background:var(--s1);border-radius:13px;padding:10px 12px;display:flex;align-items:center;gap:9px;
+  border:1px solid var(--b1);flex-shrink:0;cursor:pointer;transition:border-color .15s}
+.ri:active{border-color:var(--b2)}
+.rdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.rinfo{flex:1;min-width:0}
+.rtype{font-size:11px;font-weight:600}
+.rdate{font-size:9px;color:var(--tm);margin-top:1px}
+.rright{text-align:right;flex-shrink:0}
+.rval{font-family:'Space Mono',monospace;font-size:11px;font-weight:700}
+.rcons{font-size:8px;color:var(--tm);margin-top:1px}
+.rdel{font-size:13px;color:var(--tm);cursor:pointer;padding:4px;border-radius:7px;flex-shrink:0}
+.rdel:active{color:var(--red)}
+
+/* STATS ROW */
+.srow{display:flex;gap:8px;flex-shrink:0}
+.scard{flex:1;background:var(--s1);border-radius:13px;padding:10px 9px;border:1px solid var(--b1);text-align:center}
+.slbl{font-size:8px;text-transform:uppercase;letter-spacing:.8px;color:var(--tm)}
+.sval{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;margin-top:2px}
+.sunit{font-size:8px;color:var(--tm)}
+
+/* TABS */
+.etabs{display:flex;gap:6px;flex-shrink:0;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.etabs::-webkit-scrollbar{display:none}
+.etab{flex-shrink:0;padding:5px 13px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;
+  background:var(--s1);border:1px solid var(--b1);color:var(--tm);transition:all .15s;-webkit-tap-highlight-color:transparent}
+.etab.ae{background:var(--elec-d);border-color:var(--elec);color:var(--elec)}
+.etab.ag{background:var(--gas-d);border-color:var(--gas);color:var(--gas)}
+.etab.aw{background:var(--water-d);border-color:var(--water);color:var(--water)}
+
+.gtabs{display:flex;background:var(--s2);border-radius:10px;padding:3px;gap:2px;flex-shrink:0}
+.gtab{flex:1;border-radius:7px;padding:5px 0;font-size:9px;font-weight:600;text-align:center;cursor:pointer;color:var(--tm);transition:all .15s}
+.gtab.on{background:var(--s1);color:var(--t)}
+
+/* FAB */
+.fab{position:absolute;bottom:68px;right:14px;width:44px;height:44px;
+  background:linear-gradient(135deg,var(--acc),#5a3fd4);border-radius:22px;
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+  box-shadow:0 4px 20px rgba(124,92,252,.5);cursor:pointer;z-index:20;
+  transition:transform .15s,box-shadow .15s;border:none;color:#fff;-webkit-tap-highlight-color:transparent}
+.fab:active{transform:scale(.93)}
+
+/* MODAL */
+.mover{position:absolute;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);
+  z-index:50;display:none;align-items:flex-end;border-radius:42px;overflow:hidden}
+.mover.on{display:flex}
+.modal{width:100%;background:var(--s1);border-radius:22px 22px 0 0;padding:14px 17px 26px;
+  border-top:1px solid var(--b2);animation:su .25s ease}
+@keyframes su{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+.mhandle{width:34px;height:4px;background:var(--s3);border-radius:2px;margin:0 auto 14px}
+.mtitle{font-size:15px;font-weight:700;margin-bottom:14px}
+
+/* FORM */
+.fg{margin-bottom:11px}
+.fl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--tm);margin-bottom:5px;display:block;font-weight:600}
+.fi,.fsel{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:11px;padding:9px 11px;
+  color:var(--t);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color .15s;-webkit-appearance:none}
+.fi:focus,.fsel:focus{border-color:var(--acc)}
+.fi[type="number"]{font-family:'Space Mono',monospace}
+.frow{display:flex;gap:8px}.frow .fg{flex:1}
+
+/* BUTTONS */
+.btn-p{width:100%;background:linear-gradient(135deg,var(--acc),#5a3fd4);color:#fff;border:none;
+  border-radius:13px;padding:11px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .15s}
+.btn-p:active{opacity:.85}
+.btn-s{width:100%;background:var(--s2);color:var(--tm);border:1px solid var(--b1);border-radius:13px;
+  padding:10px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:opacity .15s}
+.btn-s:active{opacity:.8}
+.btn-sm{flex:1;background:var(--s2);color:var(--td);border:1px solid var(--b1);border-radius:11px;
+  padding:9px 8px;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;text-align:center}
+.btn-sm.active-e{background:var(--elec-d);border-color:var(--elec);color:var(--elec)}
+.btn-sm.active-g{background:var(--gas-d);border-color:var(--gas);color:var(--gas)}
+.btn-sm.active-w{background:var(--water-d);border-color:var(--water);color:var(--water)}
+
+/* OCR */
+.ocr-area{background:var(--s2);border:2px dashed var(--b2);border-radius:13px;padding:14px;
+  text-align:center;cursor:pointer;transition:border-color .15s;margin-bottom:8px}
+.ocr-area:hover{border-color:var(--acc)}
+.ocr-icon{font-size:26px;margin-bottom:5px}
+.ocr-txt{font-size:11px;color:var(--tm)}
+
+/* EMPTY */
+.empty{text-align:center;padding:28px 14px;color:var(--tm);flex-shrink:0}
+.eico{font-size:36px;margin-bottom:8px}
+.etxt{font-size:11px;line-height:1.5}
+
+/* TOAST */
+.toast{position:absolute;top:56px;left:14px;right:14px;background:var(--green);color:#fff;
+  font-size:12px;font-weight:600;padding:9px 13px;border-radius:11px;z-index:200;
+  text-align:center;opacity:0;transform:translateY(-8px);transition:all .2s;pointer-events:none}
+.toast.on{opacity:1;transform:translateY(0)}
+.toast.err{background:var(--red)}
+
+/* PROGRESS */
+.pbar{height:7px;background:var(--s2);border-radius:4px;overflow:hidden;margin-top:5px}
+.pfill{height:100%;border-radius:4px;transition:width .8s ease}
+
+/* ===== SMLOUVA ===== */
+.contract-hero{border-radius:15px;padding:14px;flex-shrink:0;position:relative;overflow:hidden}
+.contract-hero::before{content:'';position:absolute;inset:0;opacity:.08}
+.ch-lbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--tm)}
+.ch-val{font-family:'Space Mono',monospace;font-size:26px;font-weight:700;margin:4px 0}
+.ch-sub{font-size:10px;color:var(--tm)}
+.balance-row{display:flex;gap:8px;flex-shrink:0}
+.balance-card{flex:1;background:var(--s1);border-radius:13px;padding:11px 10px;border:1px solid var(--b1);text-align:center}
+.balance-lbl{font-size:8px;text-transform:uppercase;letter-spacing:.7px;color:var(--tm);margin-bottom:3px}
+.balance-val{font-family:'Space Mono',monospace;font-size:14px;font-weight:700}
+.balance-note{font-size:8px;color:var(--tm);margin-top:2px}
+.pred-card{background:var(--s1);border-radius:15px;padding:13px;border:1px solid var(--b1);flex-shrink:0}
+.pred-title{font-size:11px;font-weight:600;margin-bottom:10px;color:var(--td)}
+.pred-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:11px}
+.pred-label{color:var(--tm)}
+.pred-value{font-family:'Space Mono',monospace;font-size:11px;font-weight:700}
+.contract-tabs{display:flex;gap:6px;flex-shrink:0}
+
+/* ===== KALKULAČKA ===== */
+.kalk-summary{background:var(--s1);border-radius:15px;padding:13px;border:1px solid var(--b1);flex-shrink:0}
+.kalk-usage{font-size:11px;color:var(--tm);margin-bottom:8px}
+.kalk-usage strong{color:var(--t)}
+.supplier-card{background:var(--s1);border-radius:15px;padding:13px;border:1px solid var(--b1);flex-shrink:0;position:relative}
+.supplier-card.winner{border-color:var(--green)}
+.supplier-rank{position:absolute;top:10px;right:10px;font-size:18px}
+.sup-name{font-size:13px;font-weight:700;margin-bottom:8px;padding-right:30px}
+.sup-row{display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px}
+.sup-row span:first-child{color:var(--tm)}
+.sup-row span:last-child{font-family:'Space Mono',monospace}
+.sup-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:9px;padding-top:9px;border-top:1px solid var(--b1)}
+.sup-total-lbl{font-size:10px;color:var(--tm)}
+.sup-total-val{font-family:'Space Mono',monospace;font-size:17px;font-weight:700}
+.sup-total-val.green{color:var(--green)}
+.savings{font-size:10px;color:var(--green);text-align:center;padding:8px;background:rgba(81,207,102,.08);
+  border-radius:10px;border:1px solid rgba(81,207,102,.2);flex-shrink:0}
+.add-supplier{background:var(--s2);border:2px dashed var(--b2);border-radius:15px;padding:14px;
+  text-align:center;cursor:pointer;font-size:12px;color:var(--tm);flex-shrink:0;transition:border-color .15s}
+.add-supplier:hover{border-color:var(--acc);color:var(--acc)}
+
+/* ===== EXPORT / NASTAVENÍ ===== */
+.export-btn{display:flex;align-items:center;gap:10px;background:var(--s1);border:1px solid var(--b1);
+  border-radius:13px;padding:12px 13px;cursor:pointer;font-family:inherit;color:var(--t);width:100%;transition:border-color .15s;text-align:left}
+.export-btn:hover{border-color:var(--b2)}
+.export-btn:active{opacity:.8}
+.ebtn-ico{font-size:20px;flex-shrink:0}
+.ebtn-info{flex:1}
+.ebtn-title{font-size:12px;font-weight:600}
+.ebtn-sub{font-size:10px;color:var(--tm);margin-top:1px}
+
+/* REMINDER */
+.reminder-card{background:var(--s1);border-radius:15px;padding:13px;border:1px solid var(--b1);flex-shrink:0}
+.reminder-active{background:rgba(81,207,102,.08);border-color:rgba(81,207,102,.3);border-radius:13px;
+  padding:11px 13px;font-size:11px;color:var(--green);flex-shrink:0}
+
+/* annotation */
+.ann{display:inline-block;font-size:8px;background:var(--s2);color:var(--tm);padding:1px 5px;
+  border-radius:7px;border:1px solid var(--b1);margin-top:2px}
+
+/* NO DATA */
+.nodata{font-size:10px;color:var(--tm);text-align:center;padding:14px;font-style:italic}
+
+/* graph */
+.gchart{display:flex;align-items:flex-end;gap:5px;height:80px}
+.gbg{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end}
+.gbar{width:100%;border-radius:4px 4px 0 0;min-height:2px;transition:height .5s}
+.glab{font-size:7px;color:var(--tm);margin-top:3px}
+.legend{display:flex;gap:9px;margin-top:7px;flex-wrap:wrap}
+.li{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--td)}
+.ld{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* SETTINGS input group */
+.price-section{display:flex;flex-direction:column;gap:9px;flex-shrink:0}
+.price-row{display:flex;gap:8px}
+.price-row .fg{flex:1}
+/* ── FÁZE 3 ── */
+.obj-bar{padding:5px 14px 0;display:flex;align-items:center;gap:5px;flex-shrink:0;overflow-x:auto;scrollbar-width:none}
+.obj-bar::-webkit-scrollbar{display:none}
+.obj-pill{flex-shrink:0;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;background:var(--s1);border:1px solid var(--b1);color:var(--tm);transition:all .15s;white-space:nowrap}
+.obj-pill.on{background:var(--acc-d);border-color:var(--acc);color:var(--acc)}
+.obj-pill.add{color:var(--acc);border-style:dashed}
+.alert-box{border-radius:12px;padding:9px 11px;font-size:10px;flex-shrink:0;line-height:1.5}
+.alert-warn{background:rgba(253,126,20,.1);border:1px solid rgba(253,126,20,.35);color:#fd7e14}
+.alert-ok{background:rgba(81,207,102,.08);border:1px solid rgba(81,207,102,.25);color:var(--green)}
+.heatmap-wrap{overflow-x:auto;scrollbar-width:none}
+.heatmap-wrap::-webkit-scrollbar{display:none}
+.hm-grid{display:flex;gap:2px}
+.hm-week{display:flex;flex-direction:column;gap:2px}
+.hm-cell{width:8px;height:8px;border-radius:1.5px;cursor:default}
+.hm-cell:hover{outline:1px solid rgba(255,255,255,.5)}
+.hm-legend{display:flex;align-items:center;gap:5px;margin-top:7px;font-size:8px;color:var(--tm)}
+.hm-leg-cells{display:flex;gap:2px}
+.gdrive-card{background:linear-gradient(135deg,rgba(66,133,244,.12),rgba(52,168,83,.08));border:1px solid rgba(66,133,244,.3);border-radius:15px;padding:13px;flex-shrink:0}
+.gdrive-t{font-size:12px;font-weight:600;margin-bottom:8px;color:#80b4ff}
+.obj-item{display:flex;align-items:center;gap:9px;background:var(--s2);border-radius:11px;padding:10px 12px;border:1px solid var(--b1);margin-bottom:7px}
+.obj-item.on{border-color:var(--acc);background:var(--acc-d)}
+.obj-del{font-size:12px;color:var(--tm);cursor:pointer;padding:3px}
+.obj-del:active{color:var(--red)}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- INFO PANEL -->
+<div class="info-panel">
+  <div class="app-logo">
+    <div class="lbl">verze 0.3 – fáze 3</div>
+    <h1>Energy<br>Track</h1>
+  </div>
+  <div class="phase">🚀 Fáze 3 – Plná verze</div>
+  <div class="icard">
+    <div class="icard-t">Novinky fáze 3</div>
+    <p>
+      ✅ Více objektů (byt, chalupa…)<br>
+      ✅ Heatmapa spotřeby<br>
+      ✅ Detekce anomálií<br>
+      ✅ Google Drive záloha<br>
+      ✅ Vše z fází 1 + 2
+    </p>
+  </div>
+  <div class="icard">
+    <div class="icard-t">Jak použít objekty</div>
+    <p>V horní liště telefonu klepni na <strong>＋ Přidat</strong> a vytvoř nový objekt. Každý má vlastní odečty a smlouvy.</p>
+  </div>
+  <div class="icard">
+    <div class="icard-t">Heatmapa</div>
+    <p>Grafy → záložka <strong>Heatmapa</strong>. Zobrazuje intenzitu denní spotřeby pro celý rok. Tmavší = více.</p>
+  </div>
+  <div class="icard">
+    <div class="icard-t">Google Drive</div>
+    <p>Nastavení → zadej <strong>Google Client ID</strong> z Google Cloud Console → Připojit Drive → zálohy se nahrávají přímo na Drive.</p>
+  </div>
+</div>
+
+<!-- PHONE -->
+<div class="phone-wrap">
+<div class="phone">
+<div class="phone-inner">
+
+<div class="sbar"><span id="clock">9:41</span><span>●●● 100%</span></div>
+
+<!-- OBJECT BAR -->
+<div class="obj-bar" id="obj-bar"></div>
+
+<div class="sc-wrap">
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════════════════════
+     PŘEHLED
+══════════════════════════════════════════ -->
+<div class="sc on" id="sc-prehled">
+  <div><div class="sc-title">Přehled</div><div class="sc-sub" id="ph-date"></div></div>
+  <div id="anomaly-alerts"></div>
+  <div class="egrid">
+    <div class="ecard elec" onclick="goTab('odetrty','elec')">
+      <div class="cicon">⚡</div><div class="cname">Elektřina</div>
+      <div class="cval" id="d-elec-v">—</div><div class="cunit">kWh / měs.</div>
+      <div class="cchg n" id="d-elec-c">—</div>
+      <div class="mchart" id="d-elec-ch"></div>
+    </div>
+    <div class="ecard gas" onclick="goTab('odetrty','gas')">
+      <div class="cicon">🔥</div><div class="cname">Plyn</div>
+      <div class="cval" id="d-gas-v">—</div><div class="cunit">m³ / měs.</div>
+      <div class="cchg n" id="d-gas-c">—</div>
+      <div class="mchart" id="d-gas-ch"></div>
+    </div>
+    <div class="ecard water" onclick="goTab('odetrty','water')">
+      <div class="cicon">💧</div><div class="cname">Voda</div>
+      <div class="cval" id="d-water-v">—</div><div class="cunit">m³ / měs.</div>
+      <div class="cchg n" id="d-water-c">—</div>
+      <div class="mchart" id="d-water-ch"></div>
+    </div>
+  </div>
+
+  <div class="tcard">
+    <div class="tlbl">Celkové náklady tento měsíc</div>
+    <div class="tval" id="d-cost">— Kč</div>
+    <div class="tsub" id="d-cost-note">Nastav ceny v Nastavení</div>
+  </div>
+
+  <div class="srow">
+    <div class="scard"><div class="slbl">Odečtů</div><div class="sval" id="st-total">0</div></div>
+    <div class="scard"><div class="slbl">Sledováno</div><div class="sval" id="st-days">0</div><div class="sunit">dní</div></div>
+    <div class="scard"><div class="slbl">Energie</div><div class="sval">3</div><div class="sunit">typy</div></div>
+  </div>
+
+  <div class="sh"><div class="st">Poslední odečty</div><button class="sbtn" onclick="nav('odetrty')">Vše →</button></div>
+  <div id="d-recent"></div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ODEČTY
+══════════════════════════════════════════ -->
+<div class="sc" id="sc-odetrty">
+  <div><div class="sc-title">Odečty</div><div class="sc-sub">Historie měření</div></div>
+
+  <div class="etabs">
+    <div class="etab ae" id="tab-elec" onclick="setETab('elec')">⚡ Elektřina</div>
+    <div class="etab" id="tab-gas"  onclick="setETab('gas')">🔥 Plyn</div>
+    <div class="etab" id="tab-water" onclick="setETab('water')">💧 Voda</div>
+  </div>
+
+  <div class="srow">
+    <div class="scard"><div class="slbl">Poslední</div><div class="sval" id="o-last">—</div></div>
+    <div class="scard"><div class="slbl">Tento měsíc</div><div class="sval" id="o-month">—</div></div>
+    <div class="scard"><div class="slbl">Záznamů</div><div class="sval" id="o-count">0</div></div>
+  </div>
+
+  <div id="rlist"></div>
+  <div class="empty" id="r-empty" style="display:none"><div class="eico">📋</div><div class="etxt">Žádné odečty.<br>Přidej první tlačítkem +</div></div>
+  <button class="fab" onclick="openModal()">+</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     GRAFY
+══════════════════════════════════════════ -->
+<div class="sc" id="sc-grafy">
+  <div><div class="sc-title">Grafy</div><div class="sc-sub">Spotřeba v čase</div></div>
+  <div class="gtabs">
+    <div class="gtab on" id="gt-month"   onclick="setGTab('month')">Měsíce</div>
+    <div class="gtab"    id="gt-compare" onclick="setGTab('compare')">Rok/rok</div>
+    <div class="gtab"    id="gt-pie"     onclick="setGTab('pie')">Podíl</div>
+    <div class="gtab"    id="gt-heat"    onclick="setGTab('heat')">Heatmapa</div>
+  </div>
+  <div id="graph-content"></div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SMLOUVA
+══════════════════════════════════════════ -->
+<div class="sc" id="sc-smlouva">
+  <div><div class="sc-title">Smlouva</div><div class="sc-sub">Vyúčtování a predikce</div></div>
+
+  <div class="contract-tabs">
+    <button class="btn-sm active-e" id="ct-elec"  onclick="setCTab('elec')">⚡</button>
+    <button class="btn-sm"          id="ct-gas"   onclick="setCTab('gas')">🔥</button>
+    <button class="btn-sm"          id="ct-water" onclick="setCTab('water')">💧</button>
+  </div>
+
+  <!-- Contract settings inline -->
+  <div class="card">
+    <div class="card-t" id="ct-title">⚡ Smlouva – Elektřina</div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Začátek období</label><input class="fi" type="date" id="ct-start"></div>
+      <div class="fg"><label class="fl">Konec období</label><input class="fi" type="date" id="ct-end"></div>
+    </div>
+    <div class="frow" style="margin-top:8px">
+      <div class="fg"><label class="fl">Záloha / měsíc (Kč)</label><input class="fi" type="number" id="ct-deposit" placeholder="např. 1200"></div>
+      <div class="fg"><label class="fl">Cena / jednotku (Kč)</label><input class="fi" type="number" id="ct-price" placeholder="4.82" step="0.01"></div>
+    </div>
+    <button class="btn-p" style="margin-top:10px" onclick="saveContract()">💾 Uložit smlouvu</button>
+  </div>
+
+  <!-- Live status -->
+  <div id="contract-status"></div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     KALKULAČKA
+══════════════════════════════════════════ -->
+<div class="sc" id="sc-kalk">
+  <div><div class="sc-title">Kalkulačka</div><div class="sc-sub">Porovnání dodavatelů</div></div>
+
+  <div class="contract-tabs">
+    <button class="btn-sm active-e" id="kt-elec"  onclick="setKTab('elec')">⚡ Elektřina</button>
+    <button class="btn-sm"          id="kt-gas"   onclick="setKTab('gas')">🔥 Plyn</button>
+    <button class="btn-sm"          id="kt-water" onclick="setKTab('water')">💧 Voda</button>
+  </div>
+
+  <div class="kalk-summary">
+    <div class="kalk-usage" id="kalk-usage">Načítám spotřebu…</div>
+    <div style="display:flex;gap:6px">
+      <div class="scard" style="flex:1;background:var(--s2)"><div class="slbl">Roční spotřeba</div><div class="sval" id="kalk-annual">—</div></div>
+      <div class="scard" style="flex:1;background:var(--s2)"><div class="slbl">Průměr / měsíc</div><div class="sval" id="kalk-monthly">—</div></div>
+    </div>
+  </div>
+
+  <div id="suppliers-list"></div>
+
+  <div class="add-supplier" onclick="openSupplierModal()">+ Přidat dodavatele</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     NASTAVENÍ + EXPORT
+══════════════════════════════════════════ -->
+<div class="sc" id="sc-nastav">
+  <div><div class="sc-title">Nastavení</div><div class="sc-sub">Ceny, export a připomínky</div></div>
+
+  <!-- Prices -->
+  <div class="card">
+    <div class="card-t">Ceny energií</div>
+    <div class="price-section">
+      <div class="price-row">
+        <div class="fg"><label class="fl">⚡ Kč / kWh</label><input class="fi" type="number" id="p-elec" placeholder="4.82" step="0.01"></div>
+        <div class="fg"><label class="fl">Fixní / měs.</label><input class="fi" type="number" id="f-elec" placeholder="185"></div>
+      </div>
+      <div class="price-row">
+        <div class="fg"><label class="fl">🔥 Kč / m³</label><input class="fi" type="number" id="p-gas" placeholder="28.50" step="0.01"></div>
+        <div class="fg"><label class="fl">Fixní / měs.</label><input class="fi" type="number" id="f-gas" placeholder="210"></div>
+      </div>
+      <div class="price-row">
+        <div class="fg"><label class="fl">💧 Kč / m³</label><input class="fi" type="number" id="p-water" placeholder="95" step="0.01"></div>
+        <div class="fg"><label class="fl">Fixní / měs.</label><input class="fi" type="number" id="f-water" placeholder="0"></div>
+      </div>
+    </div>
+    <button class="btn-p" style="margin-top:10px" onclick="savePrices()">💾 Uložit ceny</button>
+  </div>
+
+  <!-- Export -->
+  <div class="card">
+    <div class="card-t">Export a záloha</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="export-btn" onclick="exportJSON()">
+        <span class="ebtn-ico">📦</span>
+        <div class="ebtn-info"><div class="ebtn-title">Exportovat JSON</div><div class="ebtn-sub">Kompletní záloha všech dat</div></div>
+      </button>
+      <button class="export-btn" onclick="exportCSV()">
+        <span class="ebtn-ico">📊</span>
+        <div class="ebtn-info"><div class="ebtn-title">Exportovat CSV</div><div class="ebtn-sub">Tabulka odečtů pro Excel</div></div>
+      </button>
+      <button class="export-btn" onclick="triggerImport()">
+        <span class="ebtn-ico">📂</span>
+        <div class="ebtn-info"><div class="ebtn-title">Importovat zálohu</div><div class="ebtn-sub">Načíst JSON soubor</div></div>
+      </button>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importJSON(event)">
+    </div>
+  </div>
+
+  <!-- Reminder -->
+  <div class="reminder-card">
+    <div class="card-t">🔔 Připomínka odečtu</div>
+    <div class="fg">
+      <label class="fl">Každý měsíc v den</label>
+      <input class="fi" type="number" id="rem-day" placeholder="např. 1" min="1" max="28">
+    </div>
+    <button class="btn-p" style="margin-top:8px" onclick="saveReminder()">Nastavit připomínku</button>
+    <div id="rem-status" style="margin-top:8px"></div>
+  </div>
+
+  <!-- Clear data -->
+  <div class="card">
+    <div class="card-t">⚠️ Data</div>
+    <p style="font-size:11px;color:var(--tm);margin-bottom:10px">Smazat všechny odečty (nelze vrátit)</p>
+    <button class="btn-s" style="color:var(--red);border-color:rgba(255,107,107,.3)" onclick="clearData()">🗑 Smazat vše</button>
+  </div>
+
+  <!-- Google Drive -->
+  <div class="gdrive-card">
+    <div class="gdrive-t">☁️ Google Drive záloha</div>
+    <div class="fg">
+      <label class="fl">Google Client ID</label>
+      <input class="fi" type="text" id="gd-client" placeholder="xxxx.apps.googleusercontent.com">
+    </div>
+    <div style="font-size:9px;color:rgba(128,180,255,.7);line-height:1.5;margin-bottom:9px">
+      Získej zdarma: <strong>console.cloud.google.com</strong> → Přihlašovací údaje → OAuth Client ID (webová aplikace)
+    </div>
+    <div style="display:flex;gap:7px">
+      <button class="btn-p" style="font-size:11px" onclick="gdriveConnect()">🔗 Připojit Drive</button>
+      <button class="btn-s" style="font-size:11px" onclick="gdriveSave()">☁️ Uložit zálohu</button>
+    </div>
+    <div id="gdrive-status" style="margin-top:8px;font-size:10px;color:var(--tm)"></div>
+  </div>
+
+  <!-- Objekty -->
+  <div class="card">
+    <div class="card-t">🏠 Správa objektů</div>
+    <p style="font-size:11px;color:var(--tm);margin-bottom:9px">Přidej více objektů – byt, chalupa, kancelář...</p>
+    <button class="btn-s" onclick="openObjModal()">Spravovat objekty</button>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: NOVÝ ODEČET
+══════════════════════════════════════════ -->
+<div class="mover" id="modal-reading">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <div class="mtitle">Nový odečet</div>
+    <div class="fg">
+      <label class="fl">Typ energie</label>
+      <select class="fsel" id="m-type">
+        <option value="elec">⚡ Elektřina (kWh)</option>
+        <option value="gas">🔥 Plyn (m³)</option>
+        <option value="water">💧 Voda (m³)</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label class="fl">Stav měřiče</label>
+      <input class="fi" type="number" id="m-val" placeholder="např. 14 521.7" step="0.001">
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Datum</label><input class="fi" type="date" id="m-date"></div>
+      <div class="fg"><label class="fl">Čas</label><input class="fi" type="time" id="m-time"></div>
+    </div>
+    <div class="fg">
+      <label class="fl">Poznámka (volitelné)</label>
+      <input class="fi" type="text" id="m-note" placeholder="např. nový tarif…">
+    </div>
+    <div class="ocr-area" onclick="simulateOCR()">
+      <div class="ocr-icon">📷</div>
+      <div class="ocr-txt">Naskenovat měřič (simulace OCR)</div>
+    </div>
+    <button class="btn-p" onclick="saveReading()">✓ Uložit odečet</button>
+    <button class="btn-s" style="margin-top:7px" onclick="closeModal('modal-reading')">Zrušit</button>
+  </div>
+</div>
+
+<!-- MODAL: DODAVATEL -->
+<div class="mover" id="modal-supplier">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <div class="mtitle">Přidat dodavatele</div>
+    <div class="fg"><label class="fl">Název dodavatele</label><input class="fi" type="text" id="sup-name" placeholder="např. ČEZ Elektro"></div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Cena / jednotku (Kč)</label><input class="fi" type="number" id="sup-price" placeholder="4.82" step="0.01"></div>
+      <div class="fg"><label class="fl">Fixní / měsíc (Kč)</label><input class="fi" type="number" id="sup-fee" placeholder="185"></div>
+    </div>
+    <div class="fg"><label class="fl">Roční distribuční poplatek (Kč)</label><input class="fi" type="number" id="sup-dist" placeholder="820"></div>
+    <button class="btn-p" style="margin-top:4px" onclick="saveSupplier()">✓ Přidat</button>
+    <button class="btn-s" style="margin-top:7px" onclick="closeModal('modal-supplier')">Zrušit</button>
+  </div>
+</div>
+
+<!-- MODAL: OBJEKTY -->
+<div class="mover" id="modal-object">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <div class="mtitle">Správa objektů</div>
+    <div id="obj-modal-list"></div>
+    <div style="font-size:11px;font-weight:600;margin-bottom:8px;color:var(--td)">Přidat nový objekt</div>
+    <div class="frow">
+      <div class="fg" style="flex:0 0 80px">
+        <label class="fl">Ikona</label>
+        <select class="fsel" id="new-obj-icon">
+          <option>🏠</option><option>🏡</option><option>🏢</option><option>🏘</option><option>⛺</option><option>🚗</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">Název</label>
+        <input class="fi" type="text" id="new-obj-name" placeholder="např. Chalupa Krkonoše">
+      </div>
+    </div>
+    <button class="btn-p" onclick="addObject()">+ Vytvořit objekt</button>
+    <button class="btn-s" style="margin-top:7px" onclick="closeModal('modal-object')">Zavřít</button>
+  </div>
+</div>
+
+</div><!-- sc-wrap -->
+
+<!-- BOTTOM NAV -->
+<div class="bnav">
+  <div class="ni on" id="nav-prehled" onclick="nav('prehled')"><div class="nicon">📊</div>Přehled</div>
+  <div class="ni"    id="nav-odetrty" onclick="nav('odetrty')"><div class="nicon">📋</div>Odečty</div>
+  <div class="ni"    id="nav-grafy"   onclick="nav('grafy')"><div class="nicon">📈</div>Grafy</div>
+  <div class="ni"    id="nav-smlouva" onclick="nav('smlouva')"><div class="nicon">📄</div>Smlouva</div>
+  <div class="ni"    id="nav-kalk"    onclick="nav('kalk')"><div class="nicon">🧮</div>Kalk.</div>
+  <div class="ni"    id="nav-nastav"  onclick="nav('nastav')"><div class="nicon">⚙️</div>Nastav.</div>
+</div>
+
+</div></div></div><!-- phone-inner, phone, phone-wrap -->
+</div><!-- page -->
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════
+const SK = 'et_readings', PK = 'et_prices', CK = 'et_contracts', SUPK = 'et_suppliers', RK = 'et_reminder';
+
+const EC = {
+  elec:  {label:'Elektřina', icon:'⚡', unit:'kWh', color:'#f5c842', cls:'elec'},
+  gas:   {label:'Plyn',      icon:'🔥', unit:'m³',  color:'#ff6b35', cls:'gas'},
+  water: {label:'Voda',      icon:'💧', unit:'m³',  color:'#3bc9db', cls:'water'},
+};
+
+const load  = k => { try { return JSON.parse(localStorage.getItem(k)||'null') } catch { return null } };
+const store = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+
+const readings  = () => load(SK) || [];
+const prices    = () => Object.assign({elec:4.82,gas:28.5,water:95,fee_elec:185,fee_gas:210,fee_water:0}, load(PK)||{});
+const contracts = () => load(CK) || {};
+const suppliers = () => load(SUPK) || {};
+
+// ═══════════════════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════════════════
+let curScreen = 'prehled';
+
+function nav(s) {
+  document.querySelectorAll('.sc').forEach(x => x.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(x => x.classList.remove('on'));
+  document.getElementById('sc-'+s).classList.add('on');
+  document.getElementById('nav-'+s).classList.add('on');
+  curScreen = s;
+  const fn = {prehled:renderDash, odetrty:renderOdetrty, grafy:renderGraphs,
+               smlouva:renderSmlouva, kalk:renderKalk, nastav:renderNastav};
+  if(fn[s]) fn[s]();
+}
+
+function goTab(s, e) { nav(s); if(s==='odetrty') setETab(e); }
+
+// Clock
+function tick(){ const n=new Date(); document.getElementById('clock').textContent=
+  n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0'); }
+setInterval(tick,10000); tick();
+
+// Toast
+let TT;
+function toast(msg, err=false) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast on'+(err?' err':'');
+  clearTimeout(TT); TT=setTimeout(()=>t.className='toast',2300);
+}
+
+// Close modals on bg click
+['modal-reading','modal-supplier'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e){ if(e.target===this) closeModal(id); });
+});
+function closeModal(id){ document.getElementById(id).classList.remove('on'); }
+
+// ═══════════════════════════════════════════════════════════
+// MODAL: ODEČET
+// ═══════════════════════════════════════════════════════════
+let curETab = 'elec';
+
+function openModal() {
+  const n=new Date();
+  document.getElementById('m-date').value=n.toISOString().slice(0,10);
+  document.getElementById('m-time').value=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0');
+  document.getElementById('m-type').value=curETab;
+  document.getElementById('m-val').value='';
+  document.getElementById('m-note').value='';
+  document.getElementById('modal-reading').classList.add('on');
+}
+
+function simulateOCR() {
+  const type = document.getElementById('m-type').value;
+  const tr = readings().filter(r=>r.type===type).sort((a,b)=>new Date(a.dt)-new Date(b.dt));
+  const base = tr.length ? tr[tr.length-1].value : {elec:12000,gas:3000,water:800}[type];
+  const add  = {elec:+(Math.random()*180+60).toFixed(1), gas:+(Math.random()*28+4).toFixed(2), water:+(Math.random()*3+0.8).toFixed(2)}[type];
+  const v = +(base+add).toFixed(3);
+  document.getElementById('m-val').value = v;
+  toast('📷 OCR: rozpoznáno '+v+' '+EC[type].unit);
+}
+
+function saveReading() {
+  const type  = document.getElementById('m-type').value;
+  const value = parseFloat(document.getElementById('m-val').value);
+  const date  = document.getElementById('m-date').value;
+  const time  = document.getElementById('m-time').value || '00:00';
+  const note  = document.getElementById('m-note').value.trim();
+  if(!date||isNaN(value)||value<0){ toast('Vyplň datum a hodnotu',true); return; }
+  const rs = readings();
+  const tr = rs.filter(r=>r.type===type).sort((a,b)=>new Date(a.dt)-new Date(b.dt));
+  if(tr.length && value < tr[tr.length-1].value){ toast('Hodnota nesmí být nižší než předchozí ('+tr[tr.length-1].value+')',true); return; }
+  rs.push({id:Date.now().toString(), type, value, dt:date+'T'+time, note});
+  store(SK,rs);
+  closeModal('modal-reading');
+  renderOdetrty(); renderDash();
+  toast('✓ Odečet uložen');
+}
+
+// ═══════════════════════════════════════════════════════════
+// ENERGY TABS (Odečty)
+// ═══════════════════════════════════════════════════════════
+function setETab(t) {
+  curETab=t;
+  Object.keys(EC).forEach(k=>{
+    const el=document.getElementById('tab-'+k);
+    el.className='etab'+(k===t?' a'+k[0]:'');
+  });
+  renderOdetrty();
+}
+
+// ═══════════════════════════════════════════════════════════
+// GRAPH TABS
+// ═══════════════════════════════════════════════════════════
+let curGTab='month';
+function setGTab(t){
+  curGTab=t;
+  ['month','compare','pie'].forEach(k=>document.getElementById('gt-'+k).className='gtab'+(k===t?' on':''));
+  renderGraphs();
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONTRACT TABS
+// ═══════════════════════════════════════════════════════════
+let curCTab='elec';
+function setCTab(t){
+  curCTab=t;
+  Object.keys(EC).forEach(k=>{
+    const b=document.getElementById('ct-'+k);
+    b.className='btn-sm'+(k===t?' active-'+k[0]:'');
+  });
+  renderSmlouva();
+}
+
+// ═══════════════════════════════════════════════════════════
+// KALK TABS
+// ═══════════════════════════════════════════════════════════
+let curKTab='elec';
+function setKTab(t){
+  curKTab=t;
+  Object.keys(EC).forEach(k=>{
+    const b=document.getElementById('kt-'+k);
+    b.className='btn-sm'+(k===t?' active-'+k[0]:'');
+  });
+  renderKalk();
+}
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+function fv(v,type){
+  if(v===null||v===undefined) return '—';
+  if(type==='water'||type==='gas') return (+v).toFixed(2);
+  return (+v).toFixed(1);
+}
+function fdt(dt){
+  const d=new Date(dt);
+  return d.getDate()+'. '+(d.getMonth()+1)+'. '+d.getFullYear()+' · '+d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+}
+function fmn(m){return['Led','Úno','Bře','Dub','Kvě','Čvn','Čvc','Srp','Zář','Říj','Lis','Pro'][m]}
+function fmon(m,y){return['Leden','Únor','Březen','Duben','Květen','Červen','Červenec','Srpen','Září','Říjen','Listopad','Prosinec'][m]+' '+y}
+
+function monthCons(sorted_asc, year, month) {
+  const sm=new Date(year,month,1), em=new Date(year,month+1,0,23,59,59);
+  if(sorted_asc.length<2) return null;
+  let total=0, found=false;
+  for(let i=1;i<sorted_asc.length;i++){
+    const pv=new Date(sorted_asc[i-1].dt), cv=new Date(sorted_asc[i].dt);
+    const cons=sorted_asc[i].value-sorted_asc[i-1].value;
+    const os=Math.max(pv.getTime(),sm.getTime()), oe=Math.min(cv.getTime(),em.getTime());
+    if(oe>os){
+      const id=(cv-pv)/86400000, od=(oe-os)/86400000;
+      if(id>0){total+=cons*(od/id);found=true;}
+    }
+  }
+  return found ? +total.toFixed(3) : null;
+}
+
+function annualCons(type) {
+  const now=new Date();
+  const rs=readings().filter(r=>r.type===type).sort((a,b)=>new Date(a.dt)-new Date(b.dt));
+  let total=0, months=0;
+  for(let i=0;i<12;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const c=monthCons(rs,d.getFullYear(),d.getMonth());
+    if(c!==null){total+=c;months++;}
+  }
+  if(months===0) return null;
+  return {annual:+(total/months*12).toFixed(1), monthly:+(total/months).toFixed(2)};
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER DASH
+// ═══════════════════════════════════════════════════════════
+function renderDash() {
+  const rs=readings(), p=prices(), now=new Date();
+  document.getElementById('ph-date').textContent=fmon(now.getMonth(),now.getFullYear());
+  let totalCost=0, hasPrice=false;
+
+  Object.keys(EC).forEach(type=>{
+    const cfg=EC[type];
+    const tr=rs.filter(r=>r.type===type).sort((a,b)=>new Date(a.dt)-new Date(b.dt));
+    const mc=monthCons(tr,now.getFullYear(),now.getMonth());
+    const pmc=monthCons(tr,now.getFullYear(),now.getMonth()-1);
+
+    document.getElementById('d-'+type+'-v').textContent=mc!==null?fv(mc,type):'—';
+
+    const cel=document.getElementById('d-'+type+'-c');
+    if(mc!==null && pmc!==null && pmc>0){
+      const pct=((mc-pmc)/pmc*100).toFixed(0);
+      cel.textContent=(pct>0?'▲ +':'▼ ')+pct+'% vs. minulý';
+      cel.className='cchg '+(pct>0?'up':'down');
+    } else { cel.textContent=mc!==null?'první data':'—'; cel.className='cchg n'; }
+
+    const last6=[];
+    for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);last6.push(monthCons(tr,d.getFullYear(),d.getMonth())||0);}
+    const mx=Math.max(...last6,0.1);
+    document.getElementById('d-'+type+'-ch').innerHTML=last6.map((v,i)=>
+      `<div class="mbar" style="height:${Math.max(v/mx*100,3)}%;background:${cfg.color};opacity:${i===5?1:.6}"></div>`
+    ).join('');
+
+    const pr=p[type]||0, fee=p['fee_'+type]||0;
+    if(mc!==null && pr>0){totalCost+=mc*pr+fee;hasPrice=true;}
+  });
+
+  document.getElementById('d-cost').textContent=totalCost>0?Math.round(totalCost)+' Kč':'— Kč';
+  document.getElementById('d-cost-note').textContent=hasPrice?'odhad dle nastavených cen':'Nastav ceny v Nastavení';
+  document.getElementById('st-total').textContent=rs.length;
+  if(rs.length>=2){
+    const s=rs.sort((a,b)=>new Date(a.dt)-new Date(b.dt));
+    document.getElementById('st-days').textContent=Math.round((new Date(s[s.length-1].dt)-new Date(s[0].dt))/86400000);
+  } else document.getElementById('st-days').textContent='0';
+
+  const recent=[...rs].sort((a,b)=>new Date(b.dt)-new Date(a.dt)).slice(0,4);
+  const rc=document.getElementById('d-recent');
+  if(!recent.length){rc.innerHTML='<div class="nodata">Žádné odečty – přidej první na záložce Odečty</div>';return;}
+  const allRs=rs;
+  rc.innerHTML=recent.map(r=>{
+    const cfg=EC[r.type];
+    const tr2=allRs.filter(x=>x.type===r.type).sort((a,b)=>new Date(a.dt)-new Date(b.dt));
+    const idx=tr2.findIndex(x=>x.id===r.id);
+    const cons=idx>0?+(r.value-tr2[idx-1].value).toFixed(3):null;
+    return `<div class="ri"><div class="rdot" style="background:${cfg.color}"></div>
+      <div class="rinfo"><div class="rtype">${cfg.icon} ${cfg.label}</div><div class="rdate">${fdt(r.dt)}</div></div>
+      <div class="rright"><div class="rval" style="color:${cfg.color}">${fv(r.value,r.type)}</div>
+      ${cons!==null?`<div class="rcons">+${fv(cons,r.type)}</div>`:''}</div></div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER ODEČTY
+// ═══════════════════════════════════════════════════════════
+function renderOdetrty() {
+  const rs=readings();
+  const tr=rs.filter(r=>r.type===curETab).sort((a,b)=>new Date(b.dt)-new Date(a.dt));
+  const asc=[...tr].reverse();
+  const now=new Date();
+  const mc=monthCons(asc,now.getFullYear(),now.getMonth());
+  document.getElementById('o-last').textContent=tr.length?fv(tr[0].value,curETab):'—';
+  document.getElementById('o-month').textContent=mc!==null?fv(mc,curETab):'—';
+  document.getElementById('o-count').textContent=tr.length;
+  const list=document.getElementById('rlist'), empty=document.getElementById('r-empty');
+  if(!tr.length){list.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  const cfg=EC[curETab];
+  list.innerHTML=tr.map(r=>{
+    const idx=asc.findIndex(x=>x.id===r.id);
+    const prev=idx>0?asc[idx-1]:null;
+    const cons=prev?+(r.value-prev.value).toFixed(3):null;
+    const days=prev?Math.round((new Date(r.dt)-new Date(prev.dt))/86400000):null;
+    return `<div class="ri">
+      <div class="rdot" style="background:${cfg.color}"></div>
+      <div class="rinfo">
+        <div class="rtype">${fdt(r.dt)}</div>
+        <div class="rdate">Stav: <strong>${fv(r.value,r.type)} ${cfg.unit}</strong>${r.note?` <span class="ann">${r.note}</span>`:''}</div>
+        ${cons!==null?`<div class="rdate">+${fv(cons,r.type)} ${cfg.unit} za ${days} dní</div>`:'<div class="rdate">první odečet</div>'}
+      </div>
+      <div class="rdel" onclick="delReading('${r.id}')">🗑</div>
+    </div>`;
+  }).join('');
+}
+
+function delReading(id){
+  store(SK,readings().filter(r=>r.id!==id));
+  renderOdetrty(); renderDash(); toast('Odečet smazán');
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER GRAPHS
+// ═══════════════════════════════════════════════════════════
+function renderGraphs() {
+  const rs=readings(), now=new Date(), gc=document.getElementById('graph-content');
+
+  if(curGTab==='month') {
+    const months=[];
+    for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push({y:d.getFullYear(),m:d.getMonth(),l:fmn(d.getMonth())});}
+    let html='';
+    Object.keys(EC).forEach(type=>{
+      const cfg=EC[type];
+      const tr=rs.filter(r=>r.type===type).sort((a,b)=>new Date(a.dt)-new Date(b.dt));
+      const vals=months.map(m=>monthCons(tr,m.y,m.m)||0);
+      const mx=Math.max(...vals,0.1);
+      html+=`<div class="card" style="margin-top:6px"><div class="card-t">${cfg.icon} ${cfg.label} – posl. 6 měsíců</div>
+        ${vals.every(v=>v===0)?'<div class="nodata">Žádná data</div>':`
+        <div class="gchart">
+          ${months.map((m,i)=>`<div class="gbg"><div class="gbar" style="height:${Math.max(vals[i]/mx*100,vals[i]>0?4:0)}%;background:${cfg.color};opacity:${i===5?1:.65}"></div><div class="glab">${m.l}</div></div>`).join('')}
+        </div>
+        <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--tm);margin-top:5px">Max: ${fv(mx,type)} ${cfg.unit}</div>`}
+      </div>`;
+    });
+    gc.innerHTML=html;
+  }
+
+  else if(curGTab==='compare') {
+    let html='';
+    Object.keys(EC).forEach(type=>{
+      const cfg=EC[type];
+      const tr=rs.filter(r=>r.type===type).sort((a,b)=>new Date(a.dt)-new Date(b.dt));
+      const ty=Array.from({length:12},(_,m)=>monthCons(tr,now.getFullYear(),m)||0);
+      const ly=Array.from({length:12},(_,m)=>monthCons(tr,now.getFullYear()-1,m)||0);
+      const mx=Math.max(...ty,...ly,0.1);
+      const hasData=[...ty,...ly].some(v=>v>0);
+      html+=`<div class="card" style="margin-top:6px"><div class="card-t">${cfg.icon} ${cfg.label} – rok/rok</div>
+        ${!hasData?'<div class="nodata">Žádná data</div>':`
+        <div class="gchart" style="height:90px;gap:3px">
+          ${Array.from({length:12},(_,m)=>`<div class="gbg" style="gap:1px">
+            <div class="gbar" style="height:${Math.max(ly[m]/mx*100,ly[m]>0?3:0)}%;background:${cfg.color};opacity:.3"></div>
+            <div class="gbar" style="height:${Math.max(ty[m]/mx*100,ty[m]>0?3:0)}%;background:${cfg.color}"></div>
+            <div class="glab">${'LJBDKČCSŘLP'.charAt(m)}</div>
+          </div>`).join('')}
+        </div>
+        <div class="legend"><div class="li"><div class="ld" style="background:${cfg.color};opacity:.3"></div>${now.getFullYear()-1}</div>
+        <div class="li"><div class="ld" style="background:${cfg.color}"></div>${now.getFullYear()}</div></div>`}
+      </div>`;
+    });
+    gc.innerHTML=html;
+  }
+
+  else { // pie
+    const p=prices();
+    const costData=Object.keys(EC).map(type=>{
+      const cfg=EC[type]; const tr=rs.filter(r=>r.type===type).sort((a,b)=>new Date(a.dt)-new Date(b.dt));
+      const cons=monthCons(tr,now.getFullYear(),now.getMonth())||0;
+      const cost=cons*(p[type]||0)+(p['fee_'+type]||0);
+      return{type,cfg,cons,cost};
+    });
+    const total=costData.reduce((s,d)=>s+d.cost,0);
+    let svgP='',sa=-90; const R=45,cx=55,cy=55;
+    if(total>0){
+      costData.forEach(d=>{
+        if(!d.cost) return;
+        const ang=(d.cost/total)*360,r1=sa*Math.PI/180,r2=(sa+ang)*Math.PI/180;
+        const x1=cx+R*Math.cos(r1),y1=cy+R*Math.sin(r1),x2=cx+R*Math.cos(r2),y2=cy+R*Math.sin(r2);
+        svgP+=`<path d="M${cx} ${cy}L${x1} ${y1}A${R} ${R} 0 ${ang>180?1:0} 1 ${x2} ${y2}Z" fill="${d.cfg.color}" opacity=".85"/>`;
+        sa+=ang;
+      });
+    } else svgP=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="var(--s2)"/>`;
+
+    gc.innerHTML=`<div class="card" style="margin-top:6px"><div class="card-t">Podíl nákladů – ${fmon(now.getMonth(),now.getFullYear())}</div>
+      ${total===0?'<div class="nodata">Nastav ceny v Nastavení</div>':`
+      <div style="display:flex;align-items:center;gap:12px">
+        <svg width="110" height="110"><defs><circle cx="${cx}" cy="${cy}" r="${R}"/></defs>
+          ${svgP}<circle cx="${cx}" cy="${cy}" r="20" fill="var(--s1)"/>
+          <text x="${cx}" y="${cy+4}" text-anchor="middle" font-family="Space Mono" font-size="8" fill="var(--t)">${Math.round(total)} Kč</text>
+        </svg>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${costData.map(d=>`<div style="display:flex;align-items:center;gap:6px">
+            <div style="width:8px;height:8px;border-radius:50%;background:${d.cfg.color};flex-shrink:0"></div>
+            <span style="font-size:10px;color:var(--td);flex:1">${d.cfg.label}</span>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;color:${d.cfg.color}">${Math.round(d.cost)} Kč</span>
+          </div>`).join('')}
+        </div>
+      </div>`}
+    </div>
+    <div class="card" style="margin-top:8px"><div class="card-t">Spotřeba – ${fmon(now.getMonth(),now.getFullYear())}</div>
+      ${costData.map(d=>{const mx=Math.max(...costData.map(x=>x.cons),0.1);return`
+        <div style="margin-bottom:9px">
+          <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px">
+            <span>${d.cfg.icon} ${d.cfg.label}</span>
+            <span style="font-family:'Space Mono',monospace;color:${d.cfg.color}">${fv(d.cons,d.type)} ${d.cfg.unit}</span>
+          </div>
+          <div class="pbar"><div class="pfill" style="width:${d.cons/mx*100}%;background:${d.cfg.color}"></div></div>
+        </div>`;}).join('')}
+    </div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SMLOUVA
+// ═══════════════════════════════════════════════════════════
+function renderSmlouva() {
+  const cs=contracts(), type=curCTab, cfg=EC[type];
+  const c=cs[type]||{};
+  document.getElementById('ct-title').textContent=cfg.icon+' Smlouva – '+cfg.label;
+  document.getElementById('ct-start').value=c.start||'';
+  document.getElementById('ct-end').value=c.end||'';
+  document.getElementById('ct-deposit').value=c.deposit||'';
+  document.getElementById('ct-price').value=c.price||prices()[type]||'';
+
+  const st=document.getElementById('contract-status');
+  if(!c.start||!c.end||!c.deposit||!c.price){
+    st.innerHTML=`<div class="nodata" style="padding:20px 0">Vyplň smlouvu výše a ulož ji.</div>`;
+    return;
+  }
+
+  const now=new Date(), start=new Date(c.start), end=new Date(c.end);
+  const totalDays=Math.round((end-start)/86400000);
+  const elapsedDays=Math.max(0,Math.round((now-start)/86400000));
+  const remainDays=Math.max(0,totalDays-elapsedDays);
+  const elapsedMonths=elapsedDays/30.44;
+  const pct=Math.min(100,Math.round(elapsedDays/totalDays*100));
+
+  // Actual consumption so far
+  const rs=readings();
+  const tr=rs.filter(r=>r.type===type).sort((a,b)=>new Date(a.dt)-new Date(b.dt));
+  let actualCons=0;
+  for(let i=1;i<tr.length;i++){
+    const pv=new Date(tr[i-1].dt),cv=new Date(tr[i].dt);
+    const os=Math.max(pv,start),oe=Math.min(cv,now);
+    if(oe>os){ const id=(cv-pv)/86400000,od=(oe-os)/86400000; if(id>0) actualCons+=(tr[i].value-tr[i-1].value)*(od/id); }
+  }
+  actualCons=+actualCons.toFixed(2);
+  const actualCost=+(actualCons*c.price).toFixed(0);
+  const paidDeposits=+(Math.floor(elapsedMonths)*c.deposit).toFixed(0);
+  const balance=paidDeposits-actualCost;
+
+  // Prediction: daily rate × remaining days
+  const dailyRate=elapsedDays>0?actualCons/elapsedDays:0;
+  const predictedExtra=+(dailyRate*remainDays).toFixed(2);
+  const predictedTotal=+(actualCons+predictedExtra).toFixed(2);
+  const predictedCost=+(predictedTotal*c.price).toFixed(0);
+  const totalDeposits=+(Math.round(totalDays/30.44)*c.deposit).toFixed(0);
+  const finalBalance=totalDeposits-predictedCost;
+
+  const balColor=balance>=0?'var(--green)':'var(--red)';
+  const finalColor=finalBalance>=0?'var(--green)':'var(--red)';
+  const balLabel=balance>=0?'Přeplatek':'Nedoplatek';
+  const finalLabel=finalBalance>=0?'Předp. přeplatek':'Předp. nedoplatek';
+
+  st.innerHTML=`
+    <!-- Progress -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--tm);margin-bottom:5px">
+        <span>Začátek: ${c.start}</span><span>${pct}% roku</span><span>Konec: ${c.end}</span>
+      </div>
+      <div class="pbar" style="height:9px"><div class="pfill" style="width:${pct}%;background:linear-gradient(90deg,var(--acc),${cfg.color})"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--tm);margin-top:4px">
+        <span>Zbývá ${remainDays} dní</span><span>z celkem ${totalDays} dní</span>
+      </div>
+    </div>
+
+    <!-- Live balance -->
+    <div class="balance-row">
+      <div class="balance-card">
+        <div class="balance-lbl">Spotřeba dosud</div>
+        <div class="balance-val" style="color:${cfg.color}">${fv(actualCons,type)}</div>
+        <div class="balance-note">${cfg.unit} = ${actualCost} Kč</div>
+      </div>
+      <div class="balance-card">
+        <div class="balance-lbl">Zaplaceno záloh</div>
+        <div class="balance-val" style="color:var(--acc)">${paidDeposits} Kč</div>
+        <div class="balance-note">${Math.floor(elapsedMonths)} × ${c.deposit} Kč</div>
+      </div>
+      <div class="balance-card">
+        <div class="balance-lbl">${balLabel}</div>
+        <div class="balance-val" style="color:${balColor}">${Math.abs(balance)} Kč</div>
+        <div class="balance-note">nyní</div>
+      </div>
+    </div>
+
+    <!-- Prediction -->
+    <div class="pred-card">
+      <div class="pred-title">🔮 Predikce konce období</div>
+      <div class="pred-row"><span class="pred-label">Denní průměr spotřeby</span><span class="pred-value" style="color:${cfg.color}">${fv(dailyRate,type)} ${cfg.unit}/den</span></div>
+      <div class="pred-row"><span class="pred-label">Předpokládaná celková spotřeba</span><span class="pred-value">${fv(predictedTotal,type)} ${cfg.unit}</span></div>
+      <div class="pred-row"><span class="pred-label">Celková cena</span><span class="pred-value">${predictedCost} Kč</span></div>
+      <div class="pred-row"><span class="pred-label">Celkem zaplaceno záloh</span><span class="pred-value">${totalDeposits} Kč</span></div>
+      <div style="border-top:1px solid var(--b1);margin:8px 0 6px"></div>
+      <div class="pred-row"><span class="pred-label" style="font-weight:700;color:var(--t)">${finalLabel}</span><span class="pred-value" style="font-size:15px;color:${finalColor}">${Math.abs(finalBalance)} Kč</span></div>
+      ${Math.abs(c.deposit-predictedCost/Math.round(totalDays/30.44))>200?`<div style="font-size:9px;color:var(--orange);margin-top:6px">⚠️ Zvažte úpravu zálohy na ~${Math.round(predictedCost/Math.round(totalDays/30.44))} Kč/měs.</div>`:''}
+    </div>`;
+}
+
+function saveContract() {
+  const type=curCTab;
+  const cs=contracts();
+  cs[type]={
+    start:document.getElementById('ct-start').value,
+    end:document.getElementById('ct-end').value,
+    deposit:parseFloat(document.getElementById('ct-deposit').value)||0,
+    price:parseFloat(document.getElementById('ct-price').value)||0,
+  };
+  if(!cs[type].start||!cs[type].end){toast('Vyplň začátek a konec období',true);return;}
+  store(CK,cs); toast('✓ Smlouva uložena'); renderSmlouva();
+}
+
+// ═══════════════════════════════════════════════════════════
+// KALKULAČKA
+// ═══════════════════════════════════════════════════════════
+function renderKalk() {
+  const type=curKTab, cfg=EC[type];
+  const ann=annualCons(type);
+  document.getElementById('kalk-usage').innerHTML=`Výpočet pro: <strong>${cfg.icon} ${cfg.label}</strong> — dle skutečné spotřeby`;
+  document.getElementById('kalk-annual').textContent=ann?fv(ann.annual,type):'—';
+  document.getElementById('kalk-monthly').textContent=ann?fv(ann.monthly,type):'—';
+
+  const sups=suppliers()[type]||[];
+  const sl=document.getElementById('suppliers-list');
+
+  if(!sups.length){
+    sl.innerHTML=`<div class="nodata" style="padding:16px 0">Žádní dodavatelé. Přidej prvního tlačítkem níže.</div>`;
+    return;
+  }
+
+  if(!ann){
+    sl.innerHTML=`<div class="nodata">Přidej odečty pro výpočet roční spotřeby.</div>`;
+    return;
+  }
+
+  // Calculate annual cost for each supplier
+  const withCost=sups.map(s=>({
+    ...s,
+    totalCost:+(ann.annual*s.price + s.fee*12 + (s.dist||0)).toFixed(0)
+  })).sort((a,b)=>a.totalCost-b.totalCost);
+
+  const best=withCost[0];
+  sl.innerHTML=withCost.map((s,i)=>`
+    <div class="supplier-card${i===0?' winner':''}" style="margin-bottom:8px">
+      <div class="supplier-rank">${['🥇','🥈','🥉','4️⃣','5️⃣'][i]||''}</div>
+      <div class="sup-name">${s.name}</div>
+      <div class="sup-row"><span>Cena / ${cfg.unit}</span><span>${s.price} Kč</span></div>
+      <div class="sup-row"><span>Fixní poplatek / měs.</span><span>${s.fee} Kč</span></div>
+      ${s.dist?`<div class="sup-row"><span>Roční distribuce</span><span>${s.dist} Kč</span></div>`:''}
+      <div class="sup-total">
+        <div class="sup-total-lbl">Celkem / rok</div>
+        <div class="sup-total-val${i===0?' green':''}">${s.totalCost.toLocaleString('cs')} Kč</div>
+      </div>
+      ${i>0?`<div style="font-size:9px;color:var(--red);margin-top:4px">+${(s.totalCost-best.totalCost).toLocaleString('cs')} Kč oproti nejlevnějšímu</div>`:''}
+      <div style="text-align:right;margin-top:6px"><button onclick="delSupplier('${type}',${i})" style="font-size:10px;color:var(--tm);background:none;border:none;cursor:pointer">🗑 Odebrat</button></div>
+    </div>`).join('');
+
+  if(withCost.length>1){
+    document.getElementById('suppliers-list').insertAdjacentHTML('afterbegin',
+      `<div class="savings">💰 Přechodem na ${best.name} ušetříš až ${(withCost[withCost.length-1].totalCost-best.totalCost).toLocaleString('cs')} Kč/rok</div>`);
+  }
+}
+
+function openSupplierModal() { document.getElementById('modal-supplier').classList.add('on'); }
+
+function saveSupplier() {
+  const name=document.getElementById('sup-name').value.trim();
+  const price=parseFloat(document.getElementById('sup-price').value);
+  const fee=parseFloat(document.getElementById('sup-fee').value)||0;
+  const dist=parseFloat(document.getElementById('sup-dist').value)||0;
+  if(!name||isNaN(price)){toast('Vyplň název a cenu',true);return;}
+  const sups=suppliers();
+  if(!sups[curKTab]) sups[curKTab]=[];
+  sups[curKTab].push({name,price,fee,dist});
+  store(SUPK,sups);
+  closeModal('modal-supplier');
+  renderKalk();
+  toast('✓ Dodavatel přidán');
+  // Clear form
+  ['sup-name','sup-price','sup-fee','sup-dist'].forEach(id=>document.getElementById(id).value='');
+}
+
+function delSupplier(type,idx){
+  const sups=suppliers();
+  sups[type].splice(idx,1);
+  store(SUPK,sups);
+  renderKalk(); toast('Dodavatel odstraněn');
+}
+
+// ═══════════════════════════════════════════════════════════
+// NASTAVENÍ
+// ═══════════════════════════════════════════════════════════
+function renderNastav() {
+  const p=prices();
+  document.getElementById('p-elec').value=p.elec||'';
+  document.getElementById('p-gas').value=p.gas||'';
+  document.getElementById('p-water').value=p.water||'';
+  document.getElementById('f-elec').value=p.fee_elec||'';
+  document.getElementById('f-gas').value=p.fee_gas||'';
+  document.getElementById('f-water').value=p.fee_water||'';
+
+  const rem=load(RK);
+  if(rem){
+    document.getElementById('rem-day').value=rem.day||'';
+    renderReminderStatus(rem);
+  }
+}
+
+function savePrices(){
+  store(PK,{
+    elec:parseFloat(document.getElementById('p-elec').value)||0,
+    gas:parseFloat(document.getElementById('p-gas').value)||0,
+    water:parseFloat(document.getElementById('p-water').value)||0,
+    fee_elec:parseFloat(document.getElementById('f-elec').value)||0,
+    fee_gas:parseFloat(document.getElementById('f-gas').value)||0,
+    fee_water:parseFloat(document.getElementById('f-water').value)||0,
+  });
+  toast('✓ Ceny uloženy');
+}
+
+function clearData(){
+  if(confirm('Opravdu smazat všechny odečty?')){localStorage.removeItem(SK);renderDash();renderOdetrty();toast('Data smazána');}
+}
+
+// ═══════════════════════════════════════════════════════════
+// EXPORT / IMPORT
+// ═══════════════════════════════════════════════════════════
+function exportJSON(){
+  const data={readings:readings(),prices:prices(),contracts:contracts(),suppliers:suppliers(),exported:new Date().toISOString()};
+  download('energytrack_zaloha.json','application/json',JSON.stringify(data,null,2));
+  toast('✓ JSON exportován');
+}
+
+function exportCSV(){
+  const rs=readings().sort((a,b)=>new Date(a.dt)-new Date(b.dt));
+  const byType={};
+  rs.forEach(r=>{if(!byType[r.type])byType[r.type]=[];byType[r.type].push(r);});
+  let csv='Datum;Čas;Typ;Stav měřiče;Jednotka;Spotřeba od minula;Poznámka\n';
+  Object.keys(EC).forEach(type=>{
+    const cfg=EC[type], tr=byType[type]||[];
+    tr.forEach((r,i)=>{
+      const d=new Date(r.dt);
+      const cons=i>0?+(r.value-tr[i-1].value).toFixed(3):'';
+      csv+=`${d.toLocaleDateString('cs')};${d.toLocaleTimeString('cs')};${cfg.label};${r.value};${cfg.unit};${cons};${r.note||''}\n`;
+    });
+  });
+  download('energytrack_odecty.csv','text/csv;charset=utf-8','\uFEFF'+csv);
+  toast('✓ CSV exportováno');
+}
+
+function download(filename,mime,content){
+  const a=document.createElement('a');
+  a.href='data:'+mime+','+encodeURIComponent(content);
+  a.download=filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function triggerImport(){ document.getElementById('import-file').click(); }
+
+function importJSON(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(data.readings) store(SK,data.readings);
+      if(data.prices)   store(PK,data.prices);
+      if(data.contracts)store(CK,data.contracts);
+      if(data.suppliers)store(SUPK,data.suppliers);
+      renderDash(); renderNastav();
+      toast('✓ Data importována ('+((data.readings||[]).length)+' odečtů)');
+    } catch{ toast('Chyba při importu souboru',true); }
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
+
+// ═══════════════════════════════════════════════════════════
+// PŘIPOMÍNKA
+// ═══════════════════════════════════════════════════════════
+function saveReminder(){
+  const day=parseInt(document.getElementById('rem-day').value);
+  if(!day||day<1||day>28){toast('Zadej den 1–28',true);return;}
+  const rem={day,set:new Date().toISOString()};
+  store(RK,rem);
+  renderReminderStatus(rem);
+  toast('✓ Připomínka nastavena');
+  // Browser notification
+  if('Notification' in window && Notification.permission==='granted'){
+    checkReminder(rem);
+  } else if('Notification' in window && Notification.permission!=='denied'){
+    Notification.requestPermission().then(p=>{ if(p==='granted') checkReminder(rem); });
+  }
+}
+
+function renderReminderStatus(rem){
+  const st=document.getElementById('rem-status');
+  const now=new Date();
+  const next=new Date(now.getFullYear(),now.getMonth()+(now.getDate()>=rem.day?1:0),rem.day);
+  const daysLeft=Math.round((next-now)/86400000);
+  st.innerHTML=`<div class="reminder-active">🔔 Připomínka aktivní — každý ${rem.day}. v měsíci<br>Příští: ${next.getDate()}. ${next.getMonth()+1}. ${next.getFullYear()} (za ${daysLeft} dní)</div>`;
+}
+
+function checkReminder(rem){
+  const now=new Date();
+  if(now.getDate()===rem.day){
+    new Notification('EnergyTrack',{body:'Čas na odečet energií! 📊',icon:'⚡'});
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// FÁZE 3 – INIT
+// ═══════════════════════════════════════════════════════════
+renderDash();
+const remData=load(RK);
+if(remData) checkReminder(remData);
+initPhase3();
+// ═══════════════════════════════════════════════════════════
+// FÁZE 3 – VÍCE OBJEKTŮ
+// ═══════════════════════════════════════════════════════════
+function getObjects(){ return load('et_objects')||[{id:'default',name:'Hlavní objekt',icon:'🏠'}]; }
+function getCurObj(){ return load('et_cur_obj')||'default'; }
+function setCurObj(id){ store('et_cur_obj',id); }
+
+// Per-object data keys
+function rKey(id){ return 'et_r_'+(id||getCurObj()); }
+function pKey(id){ return 'et_p_'+(id||getCurObj()); }
+function cKey(id){ return 'et_c_'+(id||getCurObj()); }
+function sKey(id){ return 'et_s_'+(id||getCurObj()); }
+
+function objReadings(id){ return load(rKey(id))||load(SK)||[]; }
+function objPrices(id){ return Object.assign({elec:4.82,gas:28.5,water:95,fee_elec:185,fee_gas:210,fee_water:0},load(pKey(id))||load(PK)||{}); }
+
+function renderObjBar(){
+  const objs=getObjects(), cur=getCurObj();
+  const bar=document.getElementById('obj-bar');
+  bar.innerHTML=objs.map(o=>`<div class="obj-pill${o.id===cur?' on':''}" onclick="switchObj('${o.id}')">${o.icon} ${o.name}</div>`).join('')
+    +`<div class="obj-pill add" onclick="openObjModal()">＋ Přidat</div>`;
+}
+
+function switchObj(id){
+  setCurObj(id);
+  renderObjBar();
+  renderDash();
+  if(curScreen==='odetrty') renderOdetrty();
+}
+
+function openObjModal(){
+  const objs=getObjects(), cur=getCurObj();
+  document.getElementById('obj-modal-list').innerHTML=objs.map(o=>`
+    <div class="obj-item${o.id===cur?' on':''}">
+      <span style="font-size:18px">${o.icon}</span>
+      <span style="flex:1;font-size:12px;font-weight:600">${o.name}${o.id===cur?' <span style="font-size:9px;color:var(--acc)">● aktivní</span>':''}</span>
+      ${o.id!=='default'?`<div class="obj-del" onclick="delObject('${o.id}')">🗑</div>`:''}
+    </div>`).join('');
+  document.getElementById('new-obj-name').value='';
+  document.getElementById('modal-object').classList.add('on');
+}
+
+function addObject(){
+  const name=document.getElementById('new-obj-name').value.trim();
+  const icon=document.getElementById('new-obj-icon').value;
+  if(!name){showToast('Zadej název objektu',true);return;}
+  const objs=getObjects(), id='obj_'+Date.now();
+  objs.push({id,name,icon});
+  store('et_objects',objs);
+  document.getElementById('new-obj-name').value='';
+  openObjModal();
+  showToast('✓ Objekt přidán');
+  switchObj(id);
+}
+
+function delObject(id){
+  if(id==='default'){showToast('Hlavní objekt nelze smazat',true);return;}
+  store('et_objects',getObjects().filter(o=>o.id!==id));
+  if(getCurObj()===id) setCurObj('default');
+  openObjModal(); renderObjBar(); renderDash();
+  showToast('Objekt smazán');
+}
+
+// ═══════════════════════════════════════════════════════════
+// FÁZE 3 – DETEKCE ANOMÁLIÍ
+// ═══════════════════════════════════════════════════════════
+function detectAnomalies(){
+  const now=new Date(), alerts=[];
+  const EC2={elec:{label:'Elektřina',icon:'⚡',unit:'kWh',color:'#f5c842'},gas:{label:'Plyn',icon:'🔥',unit:'m³',color:'#ff6b35'},water:{label:'Voda',icon:'💧',unit:'m³',color:'#3bc9db'}};
+  Object.keys(EC2).forEach(type=>{
+    const cfg=EC2[type];
+    const rs=(load(SK)||[]).filter(r=>r.type===type).sort((a,b)=>new Date(a.datetime)-new Date(b.datetime));
+    const hist=[];
+    for(let i=1;i<=6;i++){
+      const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+      const c=getMonthConsumption(rs.map(r=>({...r,dt:r.datetime})),d.getFullYear(),d.getMonth());
+      if(c!==null) hist.push(c);
+    }
+    if(hist.length<3) return;
+    const avg=hist.reduce((a,b)=>a+b,0)/hist.length;
+    const cur=getMonthConsumption(rs.map(r=>({...r,dt:r.datetime})),now.getFullYear(),now.getMonth());
+    if(cur===null) return;
+    const dayOfMonth=now.getDate(), daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+    const projected=cur/dayOfMonth*daysInMonth;
+    if(projected>avg*1.4) alerts.push({cfg,projected,avg,pct:Math.round((projected/avg-1)*100),unit:cfg.unit,type});
+  });
+  return alerts;
+}
+
+function renderAnomalyAlerts(){
+  const alerts=detectAnomalies();
+  const el=document.getElementById('anomaly-alerts');
+  if(!el) return;
+  const rs=load(SK)||[];
+  if(alerts.length){
+    el.innerHTML=alerts.map(a=>`<div class="alert-box alert-warn">⚠️ <strong>${a.cfg.icon} ${a.cfg.label}</strong>: odhadovaná spotřeba je o ${a.pct}% nad průměrem</div>`).join('');
+  } else if(rs.length>8){
+    el.innerHTML='<div class="alert-box alert-ok">✅ Spotřeba všech energií je v normě</div>';
+  } else {
+    el.innerHTML='';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// FÁZE 3 – HEATMAPA
+// ═══════════════════════════════════════════════════════════
+function renderHeatmap(){
+  const gc=document.getElementById('graph-content');
+  const rs=load(SK)||[], now=new Date();
+  const EC2={elec:{label:'Elektřina',icon:'⚡',unit:'kWh',color:'#f5c842'},gas:{label:'Plyn',icon:'🔥',unit:'m³',color:'#ff6b35'},water:{label:'Voda',icon:'💧',unit:'m³',color:'#3bc9db'}};
+  const MONTHS=['Led','Úno','Bře','Dub','Kvě','Čvn','Čvc','Srp','Zář','Říj','Lis','Pro'];
+
+  gc.innerHTML=Object.keys(EC2).map(type=>{
+    const cfg=EC2[type];
+    const tr=rs.filter(r=>r.type===type).sort((a,b)=>new Date(a.datetime)-new Date(b.datetime));
+    if(tr.length<2) return `<div class="card" style="margin-top:8px"><div class="card-t">${cfg.icon} ${cfg.label} – Heatmapa</div><div class="nodata">Přidej alespoň 2 odečty pro zobrazení</div></div>`;
+
+    // Build daily rate map
+    const dayMap={};
+    for(let i=1;i<tr.length;i++){
+      const prev=new Date(tr[i-1].datetime), curr=new Date(tr[i].datetime);
+      const days=Math.max(1,Math.round((curr-prev)/86400000));
+      const rate=(tr[i].value-tr[i-1].value)/days;
+      for(let d=0;d<days;d++){
+        const dd=new Date(prev); dd.setDate(dd.getDate()+d);
+        const key=dd.getFullYear()+'-'+(dd.getMonth()+1)+'-'+dd.getDate();
+        dayMap[key]=rate;
+      }
+    }
+
+    // Build year grid
+    const yearStart=new Date(now.getFullYear(),0,1);
+    const startDow=yearStart.getDay();
+    const weeks=[];
+    let week=Array(startDow).fill(null);
+    const monthWeeks={};
+    let dayIdx=0;
+    for(let m=0;m<12;m++){
+      const daysInM=new Date(now.getFullYear(),m+1,0).getDate();
+      for(let d=1;d<=daysInM;d++){
+        const date=new Date(now.getFullYear(),m,d);
+        if(date>now) break;
+        if(!monthWeeks[m]) monthWeeks[m]=weeks.length;
+        const key=date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate();
+        week.push({date,val:dayMap[key]||0});
+        if(week.length===7){weeks.push(week);week=[];}
+        dayIdx++;
+      }
+    }
+    if(week.length) weeks.push(week);
+
+    const maxVal=Math.max(...Object.values(dayMap),0.001);
+
+    const getColor=(val)=>{
+      if(!val) return 'var(--s2)';
+      const intensity=Math.min(val/maxVal,1);
+      return cfg.color+(Math.round((0.15+intensity*0.85)*255)).toString(16).padStart(2,'0');
+    };
+
+    const monthLabels=Object.entries(monthWeeks).map(([m,w])=>
+      `<span style="position:absolute;left:${w*10}px;font-size:7px;color:var(--tm)">${MONTHS[m]}</span>`).join('');
+
+    const gridHtml=weeks.map(w=>`<div class="hm-week">${w.map(d=>
+      d===null?`<div style="width:8px;height:8px"></div>`
+             :`<div class="hm-cell" style="background:${getColor(d.val)}" title="${d.date.getDate()}.${d.date.getMonth()+1}.: ${(+d.val).toFixed(2)} ${cfg.unit}/den"></div>`
+    ).join('')}</div>`).join('');
+
+    return `<div class="card" style="margin-top:8px">
+      <div class="card-t">${cfg.icon} ${cfg.label} – ${now.getFullYear()}</div>
+      <div class="heatmap-wrap">
+        <div style="position:relative;height:13px;margin-bottom:3px">${monthLabels}</div>
+        <div class="hm-grid">${gridHtml}</div>
+      </div>
+      <div class="hm-legend">
+        <span>Méně</span>
+        <div class="hm-leg-cells">
+          ${[0.15,0.35,0.55,0.75,1].map(op=>`<div style="width:8px;height:8px;border-radius:1.5px;background:${cfg.color};opacity:${op}"></div>`).join('')}
+        </div>
+        <span>Více</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// FÁZE 3 – GOOGLE DRIVE (simulace / OAuth stub)
+// ═══════════════════════════════════════════════════════════
+let gdriveToken=null;
+
+function gdriveConnect(){
+  const clientId=document.getElementById('gd-client').value.trim();
+  if(!clientId){document.getElementById('gdrive-status').textContent='⚠️ Zadej Client ID';return;}
+  store('et_gd_client',clientId);
+  // OAuth2 popup
+  const redirectUri=location.origin+location.pathname;
+  const scope='https://www.googleapis.com/auth/drive.file';
+  const url=`https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}`;
+  const popup=window.open(url,'gdrive_auth','width=500,height=600');
+  document.getElementById('gdrive-status').textContent='🔄 Čeká se na přihlášení…';
+  // Listen for token in URL hash after redirect
+  const check=setInterval(()=>{
+    try{
+      const hash=popup.location.hash;
+      if(hash&&hash.includes('access_token')){
+        clearInterval(check);
+        popup.close();
+        const params=new URLSearchParams(hash.slice(1));
+        gdriveToken=params.get('access_token');
+        document.getElementById('gdrive-status').innerHTML='<span style="color:var(--green)">✅ Připojeno k Google Drive</span>';
+        store('et_gd_connected',true);
+      }
+    }catch(e){}
+    if(popup.closed){clearInterval(check);if(!gdriveToken)document.getElementById('gdrive-status').textContent='Přihlášení zrušeno';}
+  },500);
+}
+
+function gdriveSave(){
+  const status=document.getElementById('gdrive-status');
+  if(!gdriveToken&&!load('et_gd_connected')){
+    status.textContent='⚠️ Nejdřív se připoj k Google Drive'; return;
+  }
+  // Export data as JSON and upload to Drive
+  const data=JSON.stringify({readings:load(SK)||[],prices:load(PK)||{},contracts:load(CK)||{},suppliers:load(SUPK)||{},exported:new Date().toISOString()},null,2);
+  if(gdriveToken){
+    const meta=JSON.stringify({name:'EnergyTrack_zaloha_'+new Date().toISOString().slice(0,10)+'.json',mimeType:'application/json'});
+    const form=new FormData();
+    form.append('metadata',new Blob([meta],{type:'application/json'}));
+    form.append('file',new Blob([data],{type:'application/json'}));
+    status.textContent='🔄 Nahrávám…';
+    fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{Authorization:'Bearer '+gdriveToken},body:form})
+      .then(r=>r.json())
+      .then(r=>{
+        if(r.id) status.innerHTML=`<span style="color:var(--green)">✅ Záloha uložena na Drive (${new Date().toLocaleTimeString('cs')})</span>`;
+        else status.textContent='❌ Chyba: '+JSON.stringify(r.error?.message||r);
+      }).catch(()=>status.textContent='❌ Chyba nahrávání');
+  } else {
+    // Fallback: stáhnout lokálně
+    const a=document.createElement('a');
+    a.href='data:application/json,'+encodeURIComponent(data);
+    a.download='EnergyTrack_zaloha.json';
+    a.click();
+    status.textContent='📥 Záloha stažena lokálně (Drive nepřipojen)';
+  }
+}
+
+// Patch renderGraphs to support heatmap tab
+const _origRenderGraphs=renderGraphs;
+function renderGraphs(){
+  if(curGTab==='heat'){ renderHeatmap(); return; }
+  _origRenderGraphs();
+}
+
+// Patch renderDash to add anomaly detection
+const _origRenderDash=renderDash;
+function renderDash(){
+  _origRenderDash();
+  renderAnomalyAlerts();
+}
+
+// Helper alias for anomaly detection (uses old key format)
+function getMonthConsumption(asc, year, month){
+  const sm=new Date(year,month,1), em=new Date(year,month+1,0,23,59,59);
+  if(asc.length<2) return null;
+  let total=0, found=false;
+  for(let i=1;i<asc.length;i++){
+    const pv=new Date(asc[i-1].dt), cv=new Date(asc[i].dt);
+    const os=Math.max(+pv,+sm), oe=Math.min(+cv,+em);
+    if(oe>os){const id=(cv-pv)/86400000,od=(oe-os)/86400000;if(id>0){total+=(asc[i].value-asc[i-1].value)*(od/id);found=true;}}
+  }
+  return found?+total.toFixed(3):null;
+}
+
+function showToast(msg,err=false){ toast(msg,err); }
+
+
+// ═══════════════════════════════════════════════════════════
+// PŘEDNASTAVENÁ HISTORICKÁ DATA (import z Excel souboru)
+// ═══════════════════════════════════════════════════════════
+(function injectHistoricalData(){
+  // Pouze pokud ještě nejsou data uložena
+  const existing = localStorage.getItem('et_readings');
+  const parsed = existing ? JSON.parse(existing) : [];
+  if(parsed.length >= 100) return; // již naimportováno
+  
+  const historicalData = [{"id":"538","type":"elec","value":26.0,"dt":"2011-05-01T01:00","note":""},{"id":"536","type":"elec","value":143.0,"dt":"2011-06-01T01:00","note":""},{"id":"534","type":"elec","value":237.0,"dt":"2011-07-01T01:00","note":""},{"id":"532","type":"elec","value":332.0,"dt":"2011-08-01T01:00","note":""},{"id":"529","type":"elec","value":439.0,"dt":"2011-09-01T01:00","note":""},{"id":"526","type":"elec","value":579.0,"dt":"2011-10-01T01:00","note":""},{"id":"523","type":"elec","value":719.0,"dt":"2011-11-01T01:00","note":""},{"id":"520","type":"elec","value":885.0,"dt":"2011-12-01T01:00","note":""},{"id":"517","type":"elec","value":1067.0,"dt":"2012-01-01T01:00","note":""},{"id":"514","type":"elec","value":1257.0,"dt":"2012-02-01T01:00","note":""},{"id":"511","type":"elec","value":1446.0,"dt":"2012-03-01T01:00","note":""},{"id":"508","type":"elec","value":1605.0,"dt":"2012-04-01T01:00","note":""},{"id":"505","type":"elec","value":1760.0,"dt":"2012-05-01T01:00","note":""},{"id":"502","type":"elec","value":1889.0,"dt":"2012-06-01T01:00","note":""},{"id":"499","type":"elec","value":2013.0,"dt":"2012-07-01T01:00","note":""},{"id":"496","type":"elec","value":2124.0,"dt":"2012-08-01T01:00","note":""},{"id":"493","type":"elec","value":2259.0,"dt":"2012-09-01T01:00","note":""},{"id":"490","type":"elec","value":2392.0,"dt":"2012-10-01T01:00","note":""},{"id":"487","type":"elec","value":2543.0,"dt":"2012-11-01T01:00","note":""},{"id":"484","type":"elec","value":2693.0,"dt":"2012-12-01T01:00","note":""},{"id":"481","type":"elec","value":2880.0,"dt":"2013-01-01T01:00","note":""},{"id":"478","type":"elec","value":3057.0,"dt":"2013-02-01T01:00","note":""},{"id":"475","type":"elec","value":3233.0,"dt":"2013-03-01T01:00","note":""},{"id":"472","type":"elec","value":3413.0,"dt":"2013-04-01T01:00","note":""},{"id":"469","type":"elec","value":3576.0,"dt":"2013-05-01T01:00","note":""},{"id":"466","type":"elec","value":3722.0,"dt":"2013-06-01T01:00","note":""},{"id":"463","type":"elec","value":3841.0,"dt":"2013-07-01T01:00","note":""},{"id":"460","type":"elec","value":3943.0,"dt":"2013-08-01T01:00","note":""},{"id":"457","type":"elec","value":4096.0,"dt":"2013-09-01T01:00","note":""},{"id":"454","type":"elec","value":4227.0,"dt":"2013-10-01T01:00","note":""},{"id":"451","type":"elec","value":4382.0,"dt":"2013-11-01T01:00","note":""},{"id":"448","type":"elec","value":4539.0,"dt":"2013-12-01T01:00","note":""},{"id":"445","type":"elec","value":4723.0,"dt":"2014-01-01T01:00","note":""},{"id":"442","type":"elec","value":4933.0,"dt":"2014-02-01T01:00","note":""},{"id":"439","type":"elec","value":5109.0,"dt":"2014-03-01T01:00","note":""},{"id":"436","type":"elec","value":5278.0,"dt":"2014-04-01T01:00","note":""},{"id":"433","type":"elec","value":5420.0,"dt":"2014-05-01T01:00","note":""},{"id":"430","type":"elec","value":5543.0,"dt":"2014-06-01T01:00","note":""},{"id":"427","type":"elec","value":5689.0,"dt":"2014-07-01T01:00","note":""},{"id":"424","type":"elec","value":5794.0,"dt":"2014-08-01T01:00","note":""},{"id":"421","type":"elec","value":5908.0,"dt":"2014-09-01T01:00","note":""},{"id":"418","type":"elec","value":6034.0,"dt":"2014-10-01T01:00","note":""},{"id":"415","type":"elec","value":6171.0,"dt":"2014-11-01T01:00","note":""},{"id":"412","type":"elec","value":6331.0,"dt":"2014-12-01T01:00","note":""},{"id":"409","type":"elec","value":6501.0,"dt":"2015-01-01T01:00","note":""},{"id":"406","type":"elec","value":6662.0,"dt":"2015-02-01T01:00","note":""},{"id":"403","type":"elec","value":6800.0,"dt":"2015-03-01T01:00","note":""},{"id":"400","type":"elec","value":6938.0,"dt":"2015-04-01T01:00","note":""},{"id":"397","type":"elec","value":7100.0,"dt":"2015-05-01T01:00","note":""},{"id":"394","type":"elec","value":7222.0,"dt":"2015-06-01T01:00","note":""},{"id":"391","type":"elec","value":7339.0,"dt":"2015-07-01T01:00","note":""},{"id":"388","type":"elec","value":7464.0,"dt":"2015-08-01T01:00","note":""},{"id":"385","type":"elec","value":7598.0,"dt":"2015-09-01T01:00","note":""},{"id":"382","type":"elec","value":7698.0,"dt":"2015-10-01T01:00","note":""},{"id":"379","type":"elec","value":7859.0,"dt":"2015-11-01T01:00","note":""},{"id":"376","type":"elec","value":7995.0,"dt":"2015-12-01T01:00","note":""},{"id":"373","type":"elec","value":8163.0,"dt":"2016-01-01T01:00","note":""},{"id":"370","type":"elec","value":8305.0,"dt":"2016-02-01T01:00","note":""},{"id":"367","type":"elec","value":8435.0,"dt":"2016-03-01T01:00","note":""},{"id":"364","type":"elec","value":8578.0,"dt":"2016-04-01T01:00","note":""},{"id":"361","type":"elec","value":8685.0,"dt":"2016-05-01T01:00","note":""},{"id":"358","type":"elec","value":8834.0,"dt":"2016-06-01T01:00","note":""},{"id":"355","type":"elec","value":8974.0,"dt":"2016-07-01T01:00","note":""},{"id":"352","type":"elec","value":9150.0,"dt":"2016-08-01T01:00","note":""},{"id":"349","type":"elec","value":9296.0,"dt":"2016-09-01T01:00","note":""},{"id":"346","type":"elec","value":9433.0,"dt":"2016-10-01T01:00","note":""},{"id":"343","type":"elec","value":9593.0,"dt":"2016-11-01T01:00","note":""},{"id":"340","type":"elec","value":9751.0,"dt":"2016-12-01T01:00","note":""},{"id":"337","type":"elec","value":9930.0,"dt":"2017-01-01T01:00","note":""},{"id":"334","type":"elec","value":10102.0,"dt":"2017-02-01T01:00","note":""},{"id":"331","type":"elec","value":10274.0,"dt":"2017-03-01T01:00","note":""},{"id":"328","type":"elec","value":10435.0,"dt":"2017-04-01T01:00","note":""},{"id":"325","type":"elec","value":10590.0,"dt":"2017-05-01T01:00","note":""},{"id":"322","type":"elec","value":10722.0,"dt":"2017-06-01T01:00","note":""},{"id":"319","type":"elec","value":10869.0,"dt":"2017-07-01T01:00","note":""},{"id":"316","type":"elec","value":11010.0,"dt":"2017-08-01T01:00","note":""},{"id":"313","type":"elec","value":11139.0,"dt":"2017-09-01T01:00","note":""},{"id":"310","type":"elec","value":11244.0,"dt":"2017-10-01T01:00","note":""},{"id":"307","type":"elec","value":11396.0,"dt":"2017-11-01T01:00","note":""},{"id":"304","type":"elec","value":11582.0,"dt":"2017-12-01T01:00","note":""},{"id":"301","type":"elec","value":11759.0,"dt":"2018-01-01T01:00","note":""},{"id":"298","type":"elec","value":11938.0,"dt":"2018-02-01T01:00","note":""},{"id":"295","type":"elec","value":12110.0,"dt":"2018-03-01T01:00","note":""},{"id":"292","type":"elec","value":12284.0,"dt":"2018-04-01T01:00","note":""},{"id":"289","type":"elec","value":12437.0,"dt":"2018-05-01T01:00","note":""},{"id":"286","type":"elec","value":12598.0,"dt":"2018-06-01T01:00","note":""},{"id":"283","type":"elec","value":12741.0,"dt":"2018-07-01T01:00","note":""},{"id":"280","type":"elec","value":13898.0,"dt":"2018-08-01T01:00","note":"opravit - neobvyklá hodnota [konec měřiče]"},{"id":"277","type":"elec","value":13057.0,"dt":"2018-09-01T01:00","note":""},{"id":"274","type":"elec","value":13200.0,"dt":"2018-10-01T01:00","note":""},{"id":"271","type":"elec","value":13382.0,"dt":"2018-11-01T01:00","note":""},{"id":"268","type":"elec","value":13560.0,"dt":"2018-12-01T01:00","note":""},{"id":"265","type":"elec","value":13760.0,"dt":"2019-01-01T01:00","note":""},{"id":"262","type":"elec","value":13965.0,"dt":"2019-02-01T01:00","note":""},{"id":"259","type":"elec","value":14137.0,"dt":"2019-03-01T01:00","note":""},{"id":"256","type":"elec","value":14307.0,"dt":"2019-04-01T01:00","note":""},{"id":"253","type":"elec","value":14454.0,"dt":"2019-05-01T01:00","note":""},{"id":"250","type":"elec","value":14619.0,"dt":"2019-06-01T01:00","note":""},{"id":"247","type":"elec","value":14815.0,"dt":"2019-07-01T01:00","note":""},{"id":"244","type":"elec","value":15002.0,"dt":"2019-08-01T01:00","note":""},{"id":"241","type":"elec","value":15142.0,"dt":"2019-09-01T01:00","note":""},{"id":"238","type":"elec","value":15274.0,"dt":"2019-10-01T01:00","note":""},{"id":"235","type":"elec","value":15453.0,"dt":"2019-11-01T01:00","note":""},{"id":"232","type":"elec","value":15652.0,"dt":"2019-12-01T01:00","note":""},{"id":"229","type":"elec","value":15851.0,"dt":"2020-01-01T01:00","note":""},{"id":"226","type":"elec","value":16038.0,"dt":"2020-02-01T01:00","note":""},{"id":"223","type":"elec","value":16211.0,"dt":"2020-03-01T01:00","note":""},{"id":"220","type":"elec","value":16387.0,"dt":"2020-04-01T01:00","note":""},{"id":"217","type":"elec","value":16574.0,"dt":"2020-05-01T01:00","note":""},{"id":"214","type":"elec","value":16754.0,"dt":"2020-06-01T01:00","note":""},{"id":"211","type":"elec","value":16909.0,"dt":"2020-07-01T01:00","note":""},{"id":"208","type":"elec","value":17075.0,"dt":"2020-08-01T01:00","note":""},{"id":"205","type":"elec","value":17242.0,"dt":"2020-09-01T01:00","note":""},{"id":"202","type":"elec","value":17371.0,"dt":"2020-10-01T01:00","note":""},{"id":"199","type":"elec","value":17579.0,"dt":"2020-11-01T01:00","note":""},{"id":"196","type":"elec","value":17781.0,"dt":"2020-12-01T01:00","note":""},{"id":"193","type":"elec","value":17978.0,"dt":"2021-01-01T01:00","note":""},{"id":"190","type":"elec","value":18167.0,"dt":"2021-02-01T01:00","note":""},{"id":"187","type":"elec","value":18386.0,"dt":"2021-03-01T01:00","note":""},{"id":"184","type":"elec","value":18578.0,"dt":"2021-04-01T01:00","note":""},{"id":"181","type":"elec","value":18768.0,"dt":"2021-05-01T01:00","note":""},{"id":"178","type":"elec","value":18915.0,"dt":"2021-06-01T01:00","note":""},{"id":"175","type":"elec","value":19110.0,"dt":"2021-07-01T01:00","note":""},{"id":"172","type":"elec","value":19299.0,"dt":"2021-08-01T01:00","note":""},{"id":"169","type":"elec","value":19417.0,"dt":"2021-09-01T01:00","note":""},{"id":"166","type":"elec","value":19557.0,"dt":"2021-10-01T01:00","note":""},{"id":"163","type":"elec","value":19738.0,"dt":"2021-11-01T01:00","note":""},{"id":"160","type":"elec","value":19927.0,"dt":"2021-12-01T01:00","note":""},{"id":"157","type":"elec","value":20144.0,"dt":"2022-01-01T01:00","note":""},{"id":"154","type":"elec","value":20355.0,"dt":"2022-02-01T01:00","note":""},{"id":"151","type":"elec","value":20355.0,"dt":"2022-03-01T01:00","note":""},{"id":"148","type":"elec","value":20722.0,"dt":"2022-04-01T01:00","note":""},{"id":"145","type":"elec","value":20923.0,"dt":"2022-05-01T01:00","note":""},{"id":"142","type":"elec","value":21112.0,"dt":"2022-06-01T01:00","note":""},{"id":"139","type":"elec","value":21324.0,"dt":"2022-07-01T01:00","note":""},{"id":"136","type":"elec","value":21536.0,"dt":"2022-08-01T01:00","note":" [konec měřiče]"},{"id":"133","type":"elec","value":155.0,"dt":"2022-09-01T01:00","note":"výměna měřiče"},{"id":"130","type":"elec","value":319.0,"dt":"2022-10-01T01:00","note":""},{"id":"127","type":"elec","value":487.0,"dt":"2022-11-01T01:00","note":""},{"id":"124","type":"elec","value":687.0,"dt":"2022-12-01T01:00","note":""},{"id":"121","type":"elec","value":910.0,"dt":"2023-01-01T01:00","note":""},{"id":"118","type":"elec","value":1100.0,"dt":"2023-02-01T01:00","note":""},{"id":"115","type":"elec","value":1276.0,"dt":"2023-03-01T01:00","note":""},{"id":"112","type":"elec","value":1463.0,"dt":"2023-04-01T01:00","note":""},{"id":"109","type":"elec","value":1646.0,"dt":"2023-05-01T01:00","note":""},{"id":"106","type":"elec","value":1842.0,"dt":"2023-06-01T01:00","note":""},{"id":"103","type":"elec","value":2102.0,"dt":"2023-07-01T01:00","note":""},{"id":"100","type":"elec","value":2299.0,"dt":"2023-08-01T01:00","note":""},{"id":"97","type":"elec","value":2507.0,"dt":"2023-09-01T01:00","note":""},{"id":"94","type":"elec","value":2658.0,"dt":"2023-10-01T01:00","note":""},{"id":"91","type":"elec","value":2819.0,"dt":"2023-11-01T01:00","note":""},{"id":"88","type":"elec","value":3009.0,"dt":"2023-12-01T01:00","note":""},{"id":"85","type":"elec","value":3197.0,"dt":"2024-01-01T01:00","note":""},{"id":"82","type":"elec","value":3406.0,"dt":"2024-02-01T01:00","note":""},{"id":"79","type":"elec","value":3599.0,"dt":"2024-03-01T01:00","note":""},{"id":"76","type":"elec","value":3809.0,"dt":"2024-04-01T01:00","note":""},{"id":"73","type":"elec","value":3970.0,"dt":"2024-05-01T01:00","note":""},{"id":"70","type":"elec","value":3970.0,"dt":"2024-06-01T01:00","note":""},{"id":"67","type":"elec","value":4331.0,"dt":"2024-07-01T01:00","note":""},{"id":"64","type":"elec","value":4537.0,"dt":"2024-08-01T01:00","note":""},{"id":"61","type":"elec","value":4711.0,"dt":"2024-09-01T01:00","note":""},{"id":"58","type":"elec","value":4884.0,"dt":"2024-10-01T01:00","note":""},{"id":"55","type":"elec","value":5065.0,"dt":"2024-11-01T01:00","note":""},{"id":"52","type":"elec","value":5264.0,"dt":"2024-12-01T01:00","note":""},{"id":"49","type":"elec","value":5486.0,"dt":"2025-01-01T01:00","note":""},{"id":"46","type":"elec","value":5736.0,"dt":"2025-02-01T01:00","note":""},{"id":"43","type":"elec","value":5912.0,"dt":"2025-03-01T01:00","note":""},{"id":"40","type":"elec","value":6136.0,"dt":"2025-04-01T01:00","note":""},{"id":"37","type":"elec","value":6298.0,"dt":"2025-05-01T01:00","note":""},{"id":"34","type":"elec","value":6501.0,"dt":"2025-06-01T01:00","note":""},{"id":"31","type":"elec","value":6739.0,"dt":"2025-07-01T01:00","note":""},{"id":"28","type":"elec","value":6895.0,"dt":"2025-08-01T01:00","note":""},{"id":"25","type":"elec","value":7078.0,"dt":"2025-09-01T01:00","note":""},{"id":"22","type":"elec","value":7237.0,"dt":"2025-10-01T01:00","note":""},{"id":"19","type":"elec","value":7431.0,"dt":"2025-11-01T01:00","note":""},{"id":"16","type":"elec","value":7622.0,"dt":"2025-12-01T01:00","note":""},{"id":"13","type":"elec","value":7844.0,"dt":"2026-01-01T01:00","note":""},{"id":"10","type":"elec","value":8061.0,"dt":"2026-02-01T01:00","note":""},{"id":"7","type":"elec","value":8249.0,"dt":"2026-03-01T01:00","note":""},{"id":"4","type":"elec","value":8463.0,"dt":"2026-04-01T01:00","note":""},{"id":"1","type":"elec","value":8652.0,"dt":"2026-05-01T01:00","note":""},{"id":"546","type":"gas","value":9598.0,"dt":"2010-10-01T01:00","note":""},{"id":"545","type":"gas","value":9598.0,"dt":"2010-11-01T01:00","note":""},{"id":"544","type":"gas","value":9598.0,"dt":"2010-12-01T01:00","note":""},{"id":"543","type":"gas","value":9986.0,"dt":"2011-01-01T01:00","note":""},{"id":"542","type":"gas","value":10391.0,"dt":"2011-02-01T01:00","note":""},{"id":"541","type":"gas","value":10545.0,"dt":"2011-03-01T01:00","note":""},{"id":"540","type":"gas","value":10600.0,"dt":"2011-04-01T01:00","note":""},{"id":"539","type":"gas","value":10600.0,"dt":"2011-05-01T01:00","note":""},{"id":"537","type":"gas","value":10618.0,"dt":"2011-06-01T01:00","note":""},{"id":"535","type":"gas","value":10620.0,"dt":"2011-07-01T01:00","note":""},{"id":"533","type":"gas","value":10625.0,"dt":"2011-08-01T01:00","note":""},{"id":"530","type":"gas","value":10628.0,"dt":"2011-09-01T01:00","note":""},{"id":"527","type":"gas","value":10676.0,"dt":"2011-10-01T01:00","note":""},{"id":"524","type":"gas","value":10816.0,"dt":"2011-11-01T01:00","note":""},{"id":"521","type":"gas","value":11112.0,"dt":"2011-12-01T01:00","note":""},{"id":"518","type":"gas","value":11495.0,"dt":"2012-01-01T01:00","note":""},{"id":"515","type":"gas","value":11928.0,"dt":"2012-02-01T01:00","note":""},{"id":"512","type":"gas","value":12400.0,"dt":"2012-03-01T01:00","note":""},{"id":"509","type":"gas","value":12610.0,"dt":"2012-04-01T01:00","note":""},{"id":"506","type":"gas","value":12753.0,"dt":"2012-05-01T01:00","note":""},{"id":"503","type":"gas","value":12763.0,"dt":"2012-06-01T01:00","note":""},{"id":"500","type":"gas","value":12770.0,"dt":"2012-07-01T01:00","note":""},{"id":"497","type":"gas","value":12773.0,"dt":"2012-08-01T01:00","note":""},{"id":"494","type":"gas","value":12778.0,"dt":"2012-09-01T01:00","note":""},{"id":"491","type":"gas","value":12785.0,"dt":"2012-10-01T01:00","note":""},{"id":"488","type":"gas","value":12881.0,"dt":"2012-11-01T01:00","note":""},{"id":"485","type":"gas","value":13053.0,"dt":"2012-12-01T01:00","note":""},{"id":"482","type":"gas","value":13308.0,"dt":"2013-01-01T01:00","note":""},{"id":"479","type":"gas","value":13562.0,"dt":"2013-02-01T01:00","note":""},{"id":"476","type":"gas","value":13789.0,"dt":"2013-03-01T01:00","note":""},{"id":"473","type":"gas","value":13999.0,"dt":"2013-04-01T01:00","note":""},{"id":"470","type":"gas","value":14090.0,"dt":"2013-05-01T01:00","note":""},{"id":"467","type":"gas","value":14110.0,"dt":"2013-06-01T01:00","note":""},{"id":"464","type":"gas","value":14120.0,"dt":"2013-07-01T01:00","note":""},{"id":"461","type":"gas","value":14122.0,"dt":"2013-08-01T01:00","note":""},{"id":"458","type":"gas","value":14130.0,"dt":"2013-09-01T01:00","note":""},{"id":"455","type":"gas","value":14151.0,"dt":"2013-10-01T01:00","note":""},{"id":"452","type":"gas","value":14220.0,"dt":"2013-11-01T01:00","note":""},{"id":"449","type":"gas","value":14836.0,"dt":"2013-12-01T01:00","note":" [konec měřiče]"},{"id":"446","type":"gas","value":14623.0,"dt":"2014-01-01T01:00","note":""},{"id":"443","type":"gas","value":14874.0,"dt":"2014-02-01T01:00","note":" [konec měřiče]"},{"id":"440","type":"gas","value":109.0,"dt":"2014-03-01T01:00","note":"výměna měřiče"},{"id":"437","type":"gas","value":215.0,"dt":"2014-04-01T01:00","note":""},{"id":"434","type":"gas","value":252.0,"dt":"2014-05-01T01:00","note":""},{"id":"431","type":"gas","value":275.0,"dt":"2014-06-01T01:00","note":""},{"id":"428","type":"gas","value":279.0,"dt":"2014-07-01T01:00","note":""},{"id":"425","type":"gas","value":281.0,"dt":"2014-08-01T01:00","note":""},{"id":"422","type":"gas","value":284.0,"dt":"2014-09-01T01:00","note":""},{"id":"419","type":"gas","value":290.0,"dt":"2014-10-01T01:00","note":""},{"id":"416","type":"gas","value":347.0,"dt":"2014-11-01T01:00","note":""},{"id":"413","type":"gas","value":478.0,"dt":"2014-12-01T01:00","note":""},{"id":"410","type":"gas","value":674.0,"dt":"2015-01-01T01:00","note":""},{"id":"407","type":"gas","value":883.0,"dt":"2015-02-01T01:00","note":""},{"id":"404","type":"gas","value":1067.0,"dt":"2015-03-01T01:00","note":""},{"id":"401","type":"gas","value":1199.0,"dt":"2015-04-01T01:00","note":""},{"id":"398","type":"gas","value":1287.0,"dt":"2015-05-01T01:00","note":""},{"id":"395","type":"gas","value":1295.0,"dt":"2015-06-01T01:00","note":""},{"id":"392","type":"gas","value":1302.0,"dt":"2015-07-01T01:00","note":""},{"id":"389","type":"gas","value":1304.0,"dt":"2015-08-01T01:00","note":""},{"id":"386","type":"gas","value":1306.0,"dt":"2015-09-01T01:00","note":""},{"id":"383","type":"gas","value":1313.0,"dt":"2015-10-01T01:00","note":""},{"id":"380","type":"gas","value":1407.0,"dt":"2015-11-01T01:00","note":""},{"id":"377","type":"gas","value":1528.0,"dt":"2015-12-01T01:00","note":""},{"id":"374","type":"gas","value":1707.0,"dt":"2016-01-01T01:00","note":""},{"id":"371","type":"gas","value":1938.0,"dt":"2016-02-01T01:00","note":""},{"id":"368","type":"gas","value":2124.0,"dt":"2016-03-01T01:00","note":""},{"id":"365","type":"gas","value":2278.0,"dt":"2016-04-01T01:00","note":""},{"id":"362","type":"gas","value":2333.0,"dt":"2016-05-01T01:00","note":""},{"id":"359","type":"gas","value":2338.0,"dt":"2016-06-01T01:00","note":""},{"id":"356","type":"gas","value":2342.0,"dt":"2016-07-01T01:00","note":""},{"id":"353","type":"gas","value":2345.0,"dt":"2016-08-01T01:00","note":""},{"id":"350","type":"gas","value":2350.0,"dt":"2016-09-01T01:00","note":""},{"id":"347","type":"gas","value":2360.0,"dt":"2016-10-01T01:00","note":""},{"id":"344","type":"gas","value":2466.0,"dt":"2016-11-01T01:00","note":""},{"id":"341","type":"gas","value":2650.0,"dt":"2016-12-01T01:00","note":""},{"id":"338","type":"gas","value":2876.0,"dt":"2017-01-01T01:00","note":""},{"id":"335","type":"gas","value":3164.0,"dt":"2017-02-01T01:00","note":""},{"id":"332","type":"gas","value":3379.0,"dt":"2017-03-01T01:00","note":""},{"id":"329","type":"gas","value":3513.0,"dt":"2017-04-01T01:00","note":""},{"id":"326","type":"gas","value":3600.0,"dt":"2017-05-01T01:00","note":""},{"id":"323","type":"gas","value":3619.0,"dt":"2017-06-01T01:00","note":""},{"id":"320","type":"gas","value":3626.0,"dt":"2017-07-01T01:00","note":""},{"id":"317","type":"gas","value":3631.0,"dt":"2017-08-01T01:00","note":""},{"id":"314","type":"gas","value":3634.0,"dt":"2017-09-01T01:00","note":""},{"id":"311","type":"gas","value":3668.0,"dt":"2017-10-01T01:00","note":""},{"id":"308","type":"gas","value":3755.0,"dt":"2017-11-01T01:00","note":""},{"id":"305","type":"gas","value":3929.0,"dt":"2017-12-01T01:00","note":""},{"id":"302","type":"gas","value":4139.0,"dt":"2018-01-01T01:00","note":""},{"id":"299","type":"gas","value":4345.0,"dt":"2018-02-01T01:00","note":""},{"id":"296","type":"gas","value":4567.0,"dt":"2018-03-01T01:00","note":""},{"id":"293","type":"gas","value":4773.0,"dt":"2018-04-01T01:00","note":""},{"id":"290","type":"gas","value":4814.0,"dt":"2018-05-01T01:00","note":""},{"id":"287","type":"gas","value":4820.0,"dt":"2018-06-01T01:00","note":""},{"id":"284","type":"gas","value":4825.0,"dt":"2018-07-01T01:00","note":""},{"id":"281","type":"gas","value":4829.0,"dt":"2018-08-01T01:00","note":""},{"id":"278","type":"gas","value":4833.0,"dt":"2018-09-01T01:00","note":""},{"id":"275","type":"gas","value":4870.0,"dt":"2018-10-01T01:00","note":""},{"id":"272","type":"gas","value":4936.0,"dt":"2018-11-01T01:00","note":""},{"id":"269","type":"gas","value":5099.0,"dt":"2018-12-01T01:00","note":""},{"id":"266","type":"gas","value":5313.0,"dt":"2019-01-01T01:00","note":""},{"id":"263","type":"gas","value":5575.0,"dt":"2019-02-01T01:00","note":""},{"id":"260","type":"gas","value":5776.0,"dt":"2019-03-01T01:00","note":""},{"id":"257","type":"gas","value":5934.0,"dt":"2019-04-01T01:00","note":""},{"id":"254","type":"gas","value":6007.0,"dt":"2019-05-01T01:00","note":""},{"id":"251","type":"gas","value":6051.0,"dt":"2019-06-01T01:00","note":""},{"id":"248","type":"gas","value":6062.0,"dt":"2019-07-01T01:00","note":""},{"id":"245","type":"gas","value":6082.0,"dt":"2019-08-01T01:00","note":""},{"id":"242","type":"gas","value":6098.0,"dt":"2019-09-01T01:00","note":""},{"id":"239","type":"gas","value":6121.0,"dt":"2019-10-01T01:00","note":""},{"id":"236","type":"gas","value":6220.0,"dt":"2019-11-01T01:00","note":""},{"id":"233","type":"gas","value":6384.0,"dt":"2019-12-01T01:00","note":""},{"id":"230","type":"gas","value":6606.0,"dt":"2020-01-01T01:00","note":""},{"id":"227","type":"gas","value":6842.0,"dt":"2020-02-01T01:00","note":""},{"id":"224","type":"gas","value":7037.0,"dt":"2020-03-01T01:00","note":""},{"id":"221","type":"gas","value":7210.0,"dt":"2020-04-01T01:00","note":""},{"id":"218","type":"gas","value":7261.0,"dt":"2020-05-01T01:00","note":""},{"id":"215","type":"gas","value":7289.0,"dt":"2020-06-01T01:00","note":""},{"id":"212","type":"gas","value":7298.0,"dt":"2020-07-01T01:00","note":""},{"id":"209","type":"gas","value":7302.0,"dt":"2020-08-01T01:00","note":""},{"id":"206","type":"gas","value":7307.0,"dt":"2020-09-01T01:00","note":""},{"id":"203","type":"gas","value":7317.0,"dt":"2020-10-01T01:00","note":""},{"id":"200","type":"gas","value":7418.0,"dt":"2020-11-01T01:00","note":""},{"id":"197","type":"gas","value":7590.0,"dt":"2020-12-01T01:00","note":""},{"id":"194","type":"gas","value":7796.0,"dt":"2021-01-01T01:00","note":""},{"id":"191","type":"gas","value":8024.0,"dt":"2021-02-01T01:00","note":""},{"id":"188","type":"gas","value":8265.0,"dt":"2021-03-01T01:00","note":""},{"id":"185","type":"gas","value":8433.0,"dt":"2021-04-01T01:00","note":""},{"id":"182","type":"gas","value":8545.0,"dt":"2021-05-01T01:00","note":""},{"id":"179","type":"gas","value":8583.0,"dt":"2021-06-01T01:00","note":""},{"id":"176","type":"gas","value":8589.0,"dt":"2021-07-01T01:00","note":""},{"id":"173","type":"gas","value":8594.0,"dt":"2021-08-01T01:00","note":""},{"id":"170","type":"gas","value":8601.0,"dt":"2021-09-01T01:00","note":""},{"id":"167","type":"gas","value":8613.0,"dt":"2021-10-01T01:00","note":""},{"id":"164","type":"gas","value":8705.0,"dt":"2021-11-01T01:00","note":""},{"id":"161","type":"gas","value":8877.0,"dt":"2021-12-01T01:00","note":""},{"id":"158","type":"gas","value":9117.0,"dt":"2022-01-01T01:00","note":""},{"id":"155","type":"gas","value":9338.0,"dt":"2022-02-01T01:00","note":""},{"id":"152","type":"gas","value":9338.0,"dt":"2022-03-01T01:00","note":""},{"id":"149","type":"gas","value":9643.0,"dt":"2022-04-01T01:00","note":""},{"id":"146","type":"gas","value":9733.0,"dt":"2022-05-01T01:00","note":""},{"id":"143","type":"gas","value":9741.0,"dt":"2022-06-01T01:00","note":""},{"id":"140","type":"gas","value":9748.0,"dt":"2022-07-01T01:00","note":""},{"id":"137","type":"gas","value":9751.0,"dt":"2022-08-01T01:00","note":""},{"id":"134","type":"gas","value":9755.0,"dt":"2022-09-01T01:00","note":""},{"id":"131","type":"gas","value":9772.0,"dt":"2022-10-01T01:00","note":""},{"id":"128","type":"gas","value":9843.0,"dt":"2022-11-01T01:00","note":""},{"id":"125","type":"gas","value":9984.0,"dt":"2022-12-01T01:00","note":""},{"id":"122","type":"gas","value":10201.0,"dt":"2023-01-01T01:00","note":""},{"id":"119","type":"gas","value":10405.0,"dt":"2023-02-01T01:00","note":""},{"id":"116","type":"gas","value":10577.0,"dt":"2023-03-01T01:00","note":""},{"id":"113","type":"gas","value":10751.0,"dt":"2023-04-01T01:00","note":""},{"id":"110","type":"gas","value":10857.0,"dt":"2023-05-01T01:00","note":""},{"id":"107","type":"gas","value":10889.0,"dt":"2023-06-01T01:00","note":""},{"id":"104","type":"gas","value":10915.0,"dt":"2023-07-01T01:00","note":""},{"id":"101","type":"gas","value":10930.0,"dt":"2023-08-01T01:00","note":""},{"id":"98","type":"gas","value":10952.0,"dt":"2023-09-01T01:00","note":""},{"id":"95","type":"gas","value":10977.0,"dt":"2023-10-01T01:00","note":""},{"id":"92","type":"gas","value":11031.0,"dt":"2023-11-01T01:00","note":""},{"id":"89","type":"gas","value":11196.0,"dt":"2023-12-01T01:00","note":""},{"id":"86","type":"gas","value":11397.0,"dt":"2024-01-01T01:00","note":""},{"id":"83","type":"gas","value":11654.0,"dt":"2024-02-01T01:00","note":""},{"id":"80","type":"gas","value":11830.0,"dt":"2024-03-01T01:00","note":""},{"id":"77","type":"gas","value":11957.0,"dt":"2024-04-01T01:00","note":""},{"id":"74","type":"gas","value":12021.0,"dt":"2024-05-01T01:00","note":""},{"id":"71","type":"gas","value":12021.0,"dt":"2024-06-01T01:00","note":""},{"id":"68","type":"gas","value":12077.0,"dt":"2024-07-01T01:00","note":""},{"id":"65","type":"gas","value":12098.0,"dt":"2024-08-01T01:00","note":""},{"id":"62","type":"gas","value":12115.0,"dt":"2024-09-01T01:00","note":""},{"id":"59","type":"gas","value":12140.0,"dt":"2024-10-01T01:00","note":""},{"id":"56","type":"gas","value":12216.0,"dt":"2024-11-01T01:00","note":""},{"id":"53","type":"gas","value":12397.0,"dt":"2024-12-01T01:00","note":""},{"id":"50","type":"gas","value":12620.0,"dt":"2025-01-01T01:00","note":""},{"id":"47","type":"gas","value":12861.0,"dt":"2025-02-01T01:00","note":""},{"id":"44","type":"gas","value":13070.0,"dt":"2025-03-01T01:00","note":""},{"id":"41","type":"gas","value":13224.0,"dt":"2025-04-01T01:00","note":""},{"id":"38","type":"gas","value":13281.0,"dt":"2025-05-01T01:00","note":""},{"id":"35","type":"gas","value":13327.0,"dt":"2025-06-01T01:00","note":""},{"id":"32","type":"gas","value":13361.0,"dt":"2025-07-01T01:00","note":""},{"id":"29","type":"gas","value":13384.0,"dt":"2025-08-01T01:00","note":""},{"id":"26","type":"gas","value":13406.0,"dt":"2025-09-01T01:00","note":""},{"id":"23","type":"gas","value":13439.0,"dt":"2025-10-01T01:00","note":""},{"id":"20","type":"gas","value":13533.0,"dt":"2025-11-01T01:00","note":""},{"id":"17","type":"gas","value":13705.0,"dt":"2025-12-01T01:00","note":""},{"id":"14","type":"gas","value":13920.0,"dt":"2026-01-01T01:00","note":""},{"id":"11","type":"gas","value":14186.0,"dt":"2026-02-01T01:00","note":""},{"id":"8","type":"gas","value":14371.0,"dt":"2026-03-01T01:00","note":""},{"id":"5","type":"gas","value":14515.0,"dt":"2026-04-01T01:00","note":""},{"id":"2","type":"gas","value":14597.0,"dt":"2026-05-01T01:00","note":""},{"id":"531","type":"water","value":1.305,"dt":"2011-09-01T01:00","note":""},{"id":"528","type":"water","value":1.774,"dt":"2011-10-01T01:00","note":""},{"id":"525","type":"water","value":2.108,"dt":"2011-11-01T01:00","note":""},{"id":"522","type":"water","value":2.413,"dt":"2011-12-01T01:00","note":""},{"id":"519","type":"water","value":6.418,"dt":"2012-01-01T01:00","note":""},{"id":"516","type":"water","value":10.464,"dt":"2012-02-01T01:00","note":""},{"id":"513","type":"water","value":14.234,"dt":"2012-03-01T01:00","note":""},{"id":"510","type":"water","value":18.151,"dt":"2012-04-01T01:00","note":""},{"id":"507","type":"water","value":22.314,"dt":"2012-05-01T01:00","note":""},{"id":"504","type":"water","value":26.687,"dt":"2012-06-01T01:00","note":""},{"id":"501","type":"water","value":31.658,"dt":"2012-07-01T01:00","note":""},{"id":"498","type":"water","value":35.247,"dt":"2012-08-01T01:00","note":""},{"id":"495","type":"water","value":40.781,"dt":"2012-09-01T01:00","note":""},{"id":"492","type":"water","value":43.354,"dt":"2012-10-01T01:00","note":""},{"id":"489","type":"water","value":43.863,"dt":"2012-11-01T01:00","note":""},{"id":"486","type":"water","value":44.33,"dt":"2012-12-01T01:00","note":""},{"id":"483","type":"water","value":44.755,"dt":"2013-01-01T01:00","note":""},{"id":"480","type":"water","value":45.174,"dt":"2013-02-01T01:00","note":""},{"id":"477","type":"water","value":45.592,"dt":"2013-03-01T01:00","note":""},{"id":"474","type":"water","value":45.984,"dt":"2013-04-01T01:00","note":""},{"id":"471","type":"water","value":46.565,"dt":"2013-05-01T01:00","note":""},{"id":"468","type":"water","value":52.565,"dt":"2013-06-01T01:00","note":""},{"id":"465","type":"water","value":55.792,"dt":"2013-07-01T01:00","note":""},{"id":"462","type":"water","value":56.307,"dt":"2013-08-01T01:00","note":""},{"id":"459","type":"water","value":57.371,"dt":"2013-09-01T01:00","note":""},{"id":"456","type":"water","value":57.902,"dt":"2013-10-01T01:00","note":""},{"id":"453","type":"water","value":62.018,"dt":"2013-11-01T01:00","note":""},{"id":"450","type":"water","value":65.483,"dt":"2013-12-01T01:00","note":""},{"id":"447","type":"water","value":69.924,"dt":"2014-01-01T01:00","note":""},{"id":"444","type":"water","value":70.423,"dt":"2014-02-01T01:00","note":""},{"id":"441","type":"water","value":70.858,"dt":"2014-03-01T01:00","note":""},{"id":"438","type":"water","value":71.309,"dt":"2014-04-01T01:00","note":""},{"id":"435","type":"water","value":72.352,"dt":"2014-05-01T01:00","note":""},{"id":"432","type":"water","value":74.959,"dt":"2014-06-01T01:00","note":""},{"id":"429","type":"water","value":79.764,"dt":"2014-07-01T01:00","note":""},{"id":"426","type":"water","value":88.987,"dt":"2014-08-01T01:00","note":""},{"id":"423","type":"water","value":98.43,"dt":"2014-09-01T01:00","note":""},{"id":"420","type":"water","value":100.428,"dt":"2014-10-01T01:00","note":""},{"id":"417","type":"water","value":100.956,"dt":"2014-11-01T01:00","note":""},{"id":"414","type":"water","value":101.731,"dt":"2014-12-01T01:00","note":""},{"id":"411","type":"water","value":102.1,"dt":"2015-01-01T01:00","note":""},{"id":"408","type":"water","value":102.498,"dt":"2015-02-01T01:00","note":""},{"id":"405","type":"water","value":102.795,"dt":"2015-03-01T01:00","note":""},{"id":"402","type":"water","value":104.174,"dt":"2015-04-01T01:00","note":""},{"id":"399","type":"water","value":109.132,"dt":"2015-05-01T01:00","note":""},{"id":"396","type":"water","value":113.527,"dt":"2015-06-01T01:00","note":""},{"id":"393","type":"water","value":114.925,"dt":"2015-07-01T01:00","note":""},{"id":"390","type":"water","value":115.426,"dt":"2015-08-01T01:00","note":""},{"id":"387","type":"water","value":115.898,"dt":"2015-09-01T01:00","note":""},{"id":"384","type":"water","value":116.359,"dt":"2015-10-01T01:00","note":""},{"id":"381","type":"water","value":117.0,"dt":"2015-11-01T01:00","note":""},{"id":"378","type":"water","value":118.0,"dt":"2015-12-01T01:00","note":""},{"id":"375","type":"water","value":120.0,"dt":"2016-01-01T01:00","note":""},{"id":"372","type":"water","value":124.077,"dt":"2016-02-01T01:00","note":""},{"id":"369","type":"water","value":127.2,"dt":"2016-03-01T01:00","note":""},{"id":"366","type":"water","value":131.152,"dt":"2016-04-01T01:00","note":""},{"id":"363","type":"water","value":134.404,"dt":"2016-05-01T01:00","note":""},{"id":"360","type":"water","value":139.57,"dt":"2016-06-01T01:00","note":""},{"id":"357","type":"water","value":145.128,"dt":"2016-07-01T01:00","note":""},{"id":"354","type":"water","value":150.61,"dt":"2016-08-01T01:00","note":""},{"id":"351","type":"water","value":155.61,"dt":"2016-09-01T01:00","note":""},{"id":"348","type":"water","value":160.012,"dt":"2016-10-01T01:00","note":""},{"id":"345","type":"water","value":165.011,"dt":"2016-11-01T01:00","note":""},{"id":"342","type":"water","value":169.971,"dt":"2016-12-01T01:00","note":""},{"id":"339","type":"water","value":174.808,"dt":"2017-01-01T01:00","note":""},{"id":"336","type":"water","value":179.53,"dt":"2017-02-01T01:00","note":" [konec měřiče]"},{"id":"333","type":"water","value":3.337,"dt":"2017-03-01T01:00","note":"výměna měřiče"},{"id":"330","type":"water","value":7.0,"dt":"2017-04-01T01:00","note":""},{"id":"327","type":"water","value":12.514,"dt":"2017-05-01T01:00","note":""},{"id":"324","type":"water","value":16.249,"dt":"2017-06-01T01:00","note":""},{"id":"321","type":"water","value":21.458,"dt":"2017-07-01T01:00","note":""},{"id":"318","type":"water","value":25.13,"dt":"2017-08-01T01:00","note":""},{"id":"315","type":"water","value":27.0,"dt":"2017-09-01T01:00","note":""},{"id":"312","type":"water","value":31.8,"dt":"2017-10-01T01:00","note":""},{"id":"309","type":"water","value":32.409,"dt":"2017-11-01T01:00","note":""},{"id":"306","type":"water","value":33.057,"dt":"2017-12-01T01:00","note":""},{"id":"303","type":"water","value":33.651,"dt":"2018-01-01T01:00","note":""},{"id":"300","type":"water","value":34.197,"dt":"2018-02-01T01:00","note":""},{"id":"297","type":"water","value":34.908,"dt":"2018-03-01T01:00","note":""},{"id":"294","type":"water","value":37.995,"dt":"2018-04-01T01:00","note":""},{"id":"291","type":"water","value":44.403,"dt":"2018-05-01T01:00","note":""},{"id":"288","type":"water","value":50.483,"dt":"2018-06-01T01:00","note":""},{"id":"285","type":"water","value":54.5,"dt":"2018-07-01T01:00","note":""},{"id":"282","type":"water","value":58.564,"dt":"2018-08-01T01:00","note":""},{"id":"279","type":"water","value":63.406,"dt":"2018-09-01T01:00","note":""},{"id":"276","type":"water","value":64.0,"dt":"2018-10-01T01:00","note":""},{"id":"273","type":"water","value":65.0,"dt":"2018-11-01T01:00","note":""},{"id":"270","type":"water","value":66.0,"dt":"2018-12-01T01:00","note":""},{"id":"267","type":"water","value":70.807,"dt":"2019-01-01T01:00","note":""},{"id":"264","type":"water","value":71.774,"dt":"2019-02-01T01:00","note":""},{"id":"261","type":"water","value":76.788,"dt":"2019-03-01T01:00","note":""},{"id":"258","type":"water","value":81.541,"dt":"2019-04-01T01:00","note":""},{"id":"255","type":"water","value":86.289,"dt":"2019-05-01T01:00","note":""},{"id":"252","type":"water","value":90.553,"dt":"2019-06-01T01:00","note":""},{"id":"249","type":"water","value":95.0,"dt":"2019-07-01T01:00","note":""},{"id":"246","type":"water","value":101.364,"dt":"2019-08-01T01:00","note":""},{"id":"243","type":"water","value":105.88,"dt":"2019-09-01T01:00","note":""},{"id":"240","type":"water","value":110.0,"dt":"2019-10-01T01:00","note":""},{"id":"237","type":"water","value":115.0,"dt":"2019-11-01T01:00","note":""},{"id":"234","type":"water","value":120.0,"dt":"2019-12-01T01:00","note":""},{"id":"231","type":"water","value":125.451,"dt":"2020-01-01T01:00","note":""},{"id":"228","type":"water","value":130.453,"dt":"2020-02-01T01:00","note":""},{"id":"225","type":"water","value":135.084,"dt":"2020-03-01T01:00","note":""},{"id":"222","type":"water","value":140.619,"dt":"2020-04-01T01:00","note":""},{"id":"219","type":"water","value":147.186,"dt":"2020-05-01T01:00","note":""},{"id":"216","type":"water","value":154.138,"dt":"2020-06-01T01:00","note":""},{"id":"213","type":"water","value":159.909,"dt":"2020-07-01T01:00","note":""},{"id":"210","type":"water","value":164.352,"dt":"2020-08-01T01:00","note":""},{"id":"207","type":"water","value":168.434,"dt":"2020-09-01T01:00","note":""},{"id":"204","type":"water","value":174.862,"dt":"2020-10-01T01:00","note":""},{"id":"201","type":"water","value":181.159,"dt":"2020-11-01T01:00","note":""},{"id":"198","type":"water","value":186.923,"dt":"2020-12-01T01:00","note":""},{"id":"195","type":"water","value":192.672,"dt":"2021-01-01T01:00","note":""},{"id":"192","type":"water","value":197.497,"dt":"2021-02-01T01:00","note":""},{"id":"189","type":"water","value":204.111,"dt":"2021-03-01T01:00","note":""},{"id":"186","type":"water","value":210.444,"dt":"2021-04-01T01:00","note":""},{"id":"183","type":"water","value":216.666,"dt":"2021-05-01T01:00","note":""},{"id":"180","type":"water","value":222.222,"dt":"2021-06-01T01:00","note":""},{"id":"177","type":"water","value":228.49,"dt":"2021-07-01T01:00","note":""},{"id":"174","type":"water","value":233.14,"dt":"2021-08-01T01:00","note":""},{"id":"171","type":"water","value":236.661,"dt":"2021-09-01T01:00","note":""},{"id":"168","type":"water","value":241.833,"dt":"2021-10-01T01:00","note":""},{"id":"165","type":"water","value":247.2,"dt":"2021-11-01T01:00","note":""},{"id":"162","type":"water","value":252.865,"dt":"2021-12-01T01:00","note":""},{"id":"159","type":"water","value":258.706,"dt":"2022-01-01T01:00","note":""},{"id":"156","type":"water","value":264.194,"dt":"2022-02-01T01:00","note":""},{"id":"153","type":"water","value":264.194,"dt":"2022-03-01T01:00","note":""},{"id":"150","type":"water","value":274.379,"dt":"2022-04-01T01:00","note":""},{"id":"147","type":"water","value":280.528,"dt":"2022-05-01T01:00","note":""},{"id":"144","type":"water","value":285.996,"dt":"2022-06-01T01:00","note":""},{"id":"141","type":"water","value":292.645,"dt":"2022-07-01T01:00","note":""},{"id":"138","type":"water","value":296.383,"dt":"2022-08-01T01:00","note":""},{"id":"135","type":"water","value":301.334,"dt":"2022-09-01T01:00","note":""},{"id":"132","type":"water","value":307.004,"dt":"2022-10-01T01:00","note":""},{"id":"129","type":"water","value":312.088,"dt":"2022-11-01T01:00","note":""},{"id":"126","type":"water","value":318.639,"dt":"2022-12-01T01:00","note":""},{"id":"123","type":"water","value":324.328,"dt":"2023-01-01T01:00","note":""},{"id":"120","type":"water","value":329.891,"dt":"2023-02-01T01:00","note":""},{"id":"117","type":"water","value":333.931,"dt":"2023-03-01T01:00","note":""},{"id":"114","type":"water","value":339.883,"dt":"2023-04-01T01:00","note":""},{"id":"111","type":"water","value":346.149,"dt":"2023-05-01T01:00","note":" [konec měřiče]"},{"id":"108","type":"water","value":3.936,"dt":"2023-06-01T01:00","note":"výměna měřiče"},{"id":"105","type":"water","value":10.363,"dt":"2023-07-01T01:00","note":""},{"id":"102","type":"water","value":13.995,"dt":"2023-08-01T01:00","note":""},{"id":"99","type":"water","value":19.294,"dt":"2023-09-01T01:00","note":""},{"id":"96","type":"water","value":25.034,"dt":"2023-10-01T01:00","note":""},{"id":"93","type":"water","value":30.793,"dt":"2023-11-01T01:00","note":""},{"id":"90","type":"water","value":37.158,"dt":"2023-12-01T01:00","note":""},{"id":"87","type":"water","value":43.031,"dt":"2024-01-01T01:00","note":""},{"id":"84","type":"water","value":49.607,"dt":"2024-02-01T01:00","note":""},{"id":"81","type":"water","value":55.51,"dt":"2024-03-01T01:00","note":""},{"id":"78","type":"water","value":63.261,"dt":"2024-04-01T01:00","note":""},{"id":"75","type":"water","value":69.22,"dt":"2024-05-01T01:00","note":""},{"id":"72","type":"water","value":69.22,"dt":"2024-06-01T01:00","note":""},{"id":"69","type":"water","value":81.415,"dt":"2024-07-01T01:00","note":""},{"id":"66","type":"water","value":86.799,"dt":"2024-08-01T01:00","note":""},{"id":"63","type":"water","value":90.772,"dt":"2024-09-01T01:00","note":""},{"id":"60","type":"water","value":96.904,"dt":"2024-10-01T01:00","note":""},{"id":"57","type":"water","value":103.023,"dt":"2024-11-01T01:00","note":""},{"id":"54","type":"water","value":108.913,"dt":"2024-12-01T01:00","note":""},{"id":"51","type":"water","value":116.154,"dt":"2025-01-01T01:00","note":""},{"id":"48","type":"water","value":125.322,"dt":"2025-02-01T01:00","note":""},{"id":"45","type":"water","value":132.26,"dt":"2025-03-01T01:00","note":""},{"id":"42","type":"water","value":139.914,"dt":"2025-04-01T01:00","note":""},{"id":"39","type":"water","value":145.842,"dt":"2025-05-01T01:00","note":""},{"id":"36","type":"water","value":152.35,"dt":"2025-06-01T01:00","note":""},{"id":"33","type":"water","value":159.3,"dt":"2025-07-01T01:00","note":""},{"id":"30","type":"water","value":164.0,"dt":"2025-08-01T01:00","note":""},{"id":"27","type":"water","value":169.0,"dt":"2025-09-01T01:00","note":""},{"id":"24","type":"water","value":175.093,"dt":"2025-10-01T01:00","note":""},{"id":"21","type":"water","value":181.72,"dt":"2025-11-01T01:00","note":""},{"id":"18","type":"water","value":187.994,"dt":"2025-12-01T01:00","note":""},{"id":"15","type":"water","value":195.175,"dt":"2026-01-01T01:00","note":""},{"id":"12","type":"water","value":201.789,"dt":"2026-02-01T01:00","note":""},{"id":"9","type":"water","value":207.398,"dt":"2026-03-01T01:00","note":""},{"id":"6","type":"water","value":214.475,"dt":"2026-04-01T01:00","note":""},{"id":"3","type":"water","value":220.847,"dt":"2026-05-01T01:00","note":""}];
+  localStorage.setItem('et_readings', JSON.stringify(historicalData));
+  console.log('✅ Historická data naimportována:', historicalData.length, 'odečtů');
+})();
+
+function initPhase3(){
+  renderObjBar();
+  // Load Google Drive client id if saved
+  const savedClient=load('et_gd_client');
+  const gci=document.getElementById('gd-client');
+  if(savedClient&&gci) gci.value=savedClient;
+  if(load('et_gd_connected')){
+    const st=document.getElementById('gdrive-status');
+    if(st) st.innerHTML='<span style="color:var(--green)">✅ Drive byl dříve připojen (token expiroval – znovu připoj pro upload)</span>';
+  }
+  // Close object modal on bg click
+  document.getElementById('modal-object').addEventListener('click',function(e){if(e.target===this)closeModal('modal-object');});
+}
+
+</script>
+</body>
+</html>
